@@ -136,3 +136,25 @@ packages may not provide compatible wheels.
   preservation.
 - The editor passed a 1440 × 900 rendered visual review with the toolbar,
   queue, canvas, risk message, and primary actions visible without scrolling.
+
+## Performance baseline
+
+- The Paddle GPU reference measured 1.65-second warm P50 and 35.01 images/min.
+- The two official Paddle detector weights were converted to ONNX opset 14
+  without training. On the public acceptance image, confidence and all four
+  box coordinates are identical to the Paddle reference.
+- The production ONNX pipeline measures 2.38-second warm P50 and 25.48
+  images/min. Construction improved from 7.75 to 3.96 seconds.
+- The desktop service retains the processor across batches so construction is
+  paid only once per application run.
+
+## M5 distributable
+
+- PyInstaller produces a Qt-free Windows onedir release using the system
+  WebView2 runtime.
+- Replacing Paddle/CUDA with ONNX Runtime reduced the expanded release from
+  1,093.7 MiB to 336.4 MiB. The zipped v0.1.0 release is 187.2 MiB.
+- The frozen executable passed an automated frontend/bridge launch check and
+  completed a real public sample end to end.
+- The final ZIP was extracted into a clean directory and the extracted
+  executable passed the same startup check.

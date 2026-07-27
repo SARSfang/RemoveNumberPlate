@@ -1,4 +1,4 @@
---extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu130/
-
 -r requirements.txt
-paddlepaddle-gpu==3.3.0
+
+# The production runtime uses converted ONNX detector weights and does not
+# require Paddle or a separately bundled CUDA/cuDNN runtime.

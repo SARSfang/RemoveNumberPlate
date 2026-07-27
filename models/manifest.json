@@ -11,7 +11,7 @@
       "format": "paddle-inference-archive",
       "software_license": "Apache-2.0",
       "weights_terms": "Published as an official PaddleX inference model; the archive contains no separate license file, so redistribution remains subject to final release review",
-      "enabled": true
+      "enabled": false
     },
     {
       "model_id": "pp_vehicle_plate_detector",
@@ -23,6 +23,30 @@
       "format": "paddle-inference-archive",
       "software_license": "Apache-2.0",
       "weights_terms": "Published by the official PaddleDetection PP-Vehicle documentation; the archive contains no separate license file, so redistribution remains subject to final release review",
+      "enabled": false
+    },
+    {
+      "model_id": "ppyoloe_vehicle_onnx",
+      "version": "paddlex-3.0.0-paddle2onnx-2.1.0-opset14",
+      "filename": "ppyoloe_vehicle.onnx",
+      "sha256": "a12202a2bc97905b5c47d88bbe940ad3745c1483dd38a4beb656bde2a4f243ad",
+      "source_url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-YOLOE-S_vehicle_infer.tar",
+      "homepage": "https://paddlepaddle.github.io/PaddleX/latest/en/module_usage/tutorials/cv_modules/vehicle_detection.html",
+      "format": "onnx-opset14",
+      "software_license": "Apache-2.0",
+      "weights_terms": "Locally converted without retraining from the official PaddleX inference model using Paddle2ONNX 2.1.0",
+      "enabled": true
+    },
+    {
+      "model_id": "ppvehicle_plate_onnx",
+      "version": "paddledetection-b25522a-paddle2onnx-2.1.0-opset14",
+      "filename": "ppocrv3_plate.onnx",
+      "sha256": "14b7842a195825c3d4fa5d883899e5750e69d39406651f07ef2066113a208c5d",
+      "source_url": "https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz",
+      "homepage": "https://github.com/PaddlePaddle/PaddleDetection/blob/b25522a0f4bde8c80603f3ba5e3472059972e3b5/deploy/pipeline/docs/tutorials/ppvehicle_plate.md",
+      "format": "onnx-opset14",
+      "software_license": "Apache-2.0",
+      "weights_terms": "Locally converted without retraining from the official PaddleDetection inference model using Paddle2ONNX 2.1.0",
       "enabled": true
     },
     {

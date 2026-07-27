@@ -15,8 +15,7 @@ from app.core.two_stage_detector import VehicleFirstPlateDetector
 from app.domain.job import JobStatus
 from app.infrastructure.lama_inpainter import LamaInpainter
 from app.infrastructure.model_registry import load_manifest
-from app.infrastructure.paddle_plate_detector import PaddlePlateDetector
-from app.infrastructure.paddle_vehicle_detector import PaddleVehicleDetector
+from app.infrastructure.onnx_detectors import OnnxPlateDetector, OnnxVehicleDetector
 
 
 def _verify_enabled_models(paths: AppPaths) -> None:
@@ -32,13 +31,9 @@ def build_processor(auto_confidence: float) -> ImageProcessor:
     paths = AppPaths.default()
     _verify_enabled_models(paths)
     detector = VehicleFirstPlateDetector(
-        PaddleVehicleDetector(
-            paths.models_dir / "PP-YOLOE-S_vehicle_infer",
-            use_gpu=True,
-        ),
-        PaddlePlateDetector(
-            paths.models_dir / "ch_PP-OCRv3_det_infer",
-            use_gpu=True,
+        OnnxVehicleDetector(paths.models_dir / "ppyoloe_vehicle.onnx"),
+        OnnxPlateDetector(
+            paths.models_dir / "ppocrv3_plate.onnx",
             limit_side_len=736,
             limit_type="min",
         ),

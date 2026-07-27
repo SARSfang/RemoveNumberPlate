@@ -58,6 +58,7 @@ class BatchService:
         self._paused = False
         self._cancelled = False
         self._thread: threading.Thread | None = None
+        self._processor: Processor | None = None
 
     @property
     def busy(self) -> bool:
@@ -139,7 +140,10 @@ class BatchService:
                 )
                 self._finish(False)
                 return
-            processor = self._processor_factory()
+            processor = self._processor
+            if processor is None:
+                processor = self._processor_factory()
+                self._processor = processor
             with JobStore(self._job_database) as store:
                 jobs = [(store.create_job(source), source) for source in sources]
                 for offset, (identifier, source) in enumerate(jobs):
@@ -243,12 +247,12 @@ class DesktopApi:
         with JobStore(self._job_database) as store:
             counts = store.counts()
         return {
-            "gpu": device.gpu_name or "未检测到 NVIDIA GPU",
-            "cuda_available": device.gpu_name is not None,
+            "gpu": device.gpu_name or "未检测到独立显卡",
+            "cuda_available": False,
             "models_ready": all(value["ready"] for value in model_states),
             "model_states": model_states,
             "history_counts": counts,
-            "runtime": "GPU 检测 + CPU LaMa 修复",
+            "runtime": "轻量 ONNX Runtime · 本地离线处理",
         }
 
     def frontend_ready(self) -> bool:
@@ -437,6 +441,47 @@ class DesktopApi:
         ]
         if paths:
             self.start_batch(paths)
+
+
+class _SmokeApi(DesktopApi):
+    """Desktop API variant that closes after the frontend initializes."""
+
+    def __init__(self, ready: threading.Event) -> None:
+        super().__init__()
+        self._smoke_ready = ready
+
+    def frontend_ready(self) -> bool:
+        self._smoke_ready.set()
+        if self._window is not None:
+            threading.Timer(0.2, self._window.destroy).start()
+        return True
+
+
+def smoke() -> int:
+    """Load the local frontend and Python bridge, then exit automatically."""
+
+    loaded = threading.Event()
+    bridge_ready = threading.Event()
+    api = _SmokeApi(bridge_ready)
+    window = webview.create_window(
+        "消除车牌 · 启动检查",
+        url=str(frontend_directory() / "index.html"),
+        js_api=api,
+        width=1040,
+        height=680,
+        min_size=(1040, 680),
+        background_color="#0C111B",
+    )
+    if window is None:
+        return 1
+    api._bind_window(window)
+
+    def mark_loaded() -> None:
+        loaded.set()
+
+    window.events.loaded += mark_loaded
+    webview.start(gui="edgechromium", debug=False, private_mode=True)
+    return 0 if loaded.is_set() and bridge_ready.is_set() else 1
 
 
 def launch() -> int:

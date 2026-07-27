@@ -6,13 +6,15 @@ not yet a final release notice.
 ## PaddleX PP-YOLOE-S vehicle detector
 
 - Project: <https://github.com/PaddlePaddle/PaddleX>
-- Artifact: `PP-YOLOE-S_vehicle_infer.tar`
+- Runtime artifact: `ppyoloe_vehicle.onnx`
+- Derived from: `PP-YOLOE-S_vehicle_infer.tar`
 - Source:
   <https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-YOLOE-S_vehicle_infer.tar>
 - SHA-256:
   `1143b3e62e1716ed056870f3788da77457b932cc7efa10b3abca5d24f61d0b2e`
 - Project license: Apache License 2.0
 - Model description: 640 x 640 single-class PP-YOLOE-S vehicle detector.
+- Conversion: Paddle2ONNX 2.1.0, ONNX opset 14, no retraining.
 - Release note: the downloaded model archive contains no separate license
   file. Redistribution must receive a final terms review before packaging.
 
@@ -21,7 +23,8 @@ not yet a final release notice.
 - Project: <https://github.com/PaddlePaddle/PaddleDetection>
 - Pinned documentation revision:
   `b25522a0f4bde8c80603f3ba5e3472059972e3b5`
-- Artifact: `ch_PP-OCRv3_det_infer.tar.gz`
+- Runtime artifact: `ppocrv3_plate.onnx`
+- Derived from: `ch_PP-OCRv3_det_infer.tar.gz`
 - Source:
   <https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz>
 - SHA-256:
@@ -29,6 +32,7 @@ not yet a final release notice.
 - Project license: Apache License 2.0
 - Model description: PP-OCRv3 text detector fine-tuned on a mixture of
   CCPD2019 and CCPD2020 for plate detection.
+- Conversion: Paddle2ONNX 2.1.0, ONNX opset 14, no retraining.
 - Release note: the downloaded model archive contains no separate license
   file. Redistribution must receive a final terms review before packaging.
 

@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from platformdirs import user_data_path, user_log_path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+def _project_root() -> Path:
+    """Return the source root or PyInstaller's bundled resource root."""
+
+    frozen_root = getattr(sys, "_MEIPASS", None)
+    if frozen_root is not None:
+        return Path(frozen_root)
+    return Path(__file__).resolve().parent.parent
+
+
+PROJECT_ROOT = _project_root()
 MODELS_DIR = PROJECT_ROOT / "models"
 MODEL_MANIFEST_PATH = MODELS_DIR / "manifest.json"
 

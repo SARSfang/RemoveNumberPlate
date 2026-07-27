@@ -107,6 +107,29 @@ def test_batch_service_rejects_controls_while_idle(tmp_path: Path) -> None:
     assert not service.cancel()
 
 
+def test_batch_service_reuses_model_session_across_batches(tmp_path: Path) -> None:
+    source = tmp_path / "source.jpg"
+    source.write_bytes(b"source")
+    constructions = 0
+
+    def factory() -> FakeProcessor:
+        nonlocal constructions
+        constructions += 1
+        return FakeProcessor()
+
+    service = BatchService(
+        lambda _name, _payload: None,
+        factory,
+        job_database=tmp_path / "jobs.sqlite3",
+    )
+
+    assert service.start([source])
+    assert service.wait()
+    assert service.start([source])
+    assert service.wait()
+    assert constructions == 1
+
+
 def test_cancel_preserves_current_result_and_cancels_remaining(tmp_path: Path) -> None:
     (tmp_path / "a.jpg").write_bytes(b"a")
     (tmp_path / "b.jpg").write_bytes(b"b")
