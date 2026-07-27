@@ -347,7 +347,7 @@ feat: add resumable and metadata-safe batch pipeline
 - 打开输出目录；
 - 明确显示“完全离线”状态。
 
-任务引擎通过 Qt signals 或线程安全事件桥通知 GUI。主线程不执行图片解码或模型推理。
+任务引擎通过线程安全事件桥通知 WebView2 前端。界面线程不执行图片解码或模型推理。
 
 ### 6.3 设置与设备自检
 
@@ -359,7 +359,7 @@ feat: add resumable and metadata-safe batch pipeline
 - 预计运行模式；
 - 不兼容驱动或缺失模型的可操作错误。
 
-GUI 测试使用 `pytest-qt`，至少覆盖拖放、分栏切换、按钮状态和任务事件。
+GUI 测试覆盖静态资源安全、拖放、分栏切换、按钮状态、任务事件和真实 WebView2 启动。
 
 提交建议：
 
@@ -449,14 +449,14 @@ feat: add exception review and mask editing workflow
 优先构建目录式安装包，而不是单文件自解压 EXE：
 
 - 启动更快；
-- Qt、GPU 运行时和许可证文件可见；
+- Python、WebView2 桥接、GPU 运行时和许可证文件可见；
 - LGPL 动态库替换更清晰；
 - 模型可独立更新和校验。
 
 打包内容：
 
 - 应用；
-- Qt 动态库；
+- pywebview 与 pythonnet 运行时；
 - 选定推理运行时；
 - 固定模型；
 - `THIRD_PARTY_NOTICES.md`；

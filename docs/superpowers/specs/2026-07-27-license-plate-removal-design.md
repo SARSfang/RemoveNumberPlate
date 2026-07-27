@@ -182,7 +182,7 @@ Ultralytics 官方许可页面说明，其代码和模型用于闭源商业软�
 - 应用重启后恢复未完成任务；
 - 向界面发送不可变进度事件。
 
-模型推理运行在线程或独立工作进程中，绝不阻塞 Qt 主线程。
+模型推理运行在线程或独立工作进程中，绝不阻塞 WebView2 界面线程。
 
 ## 6. 大图处理与质量策略
 
@@ -378,7 +378,7 @@ queued
 - 权重来源和 SHA-256；
 - 必须附带的 NOTICE 或源代码获取方式。
 
-PySide6 可在 LGPL/GPL/商业许可下使用。若采用 LGPL 路线，打包必须保留动态链接库可替换性、许可证文本及相应通知；正式商业发布前应进行一次许可证复核。
+桌面外壳使用 pywebview 与系统 WebView2 Evergreen Runtime，不把 Qt 或浏览器内核打入安装包。安装器必须检测 WebView2；缺失时使用微软官方离线安装器。正式商业发布前仍需复核 pywebview、pythonnet 和 WebView2 的分发通知。
 
 该规格不构成法律意见。模型代码许可证不自动证明训练数据和权重再分发权相同，因此必须分别核验。
 
@@ -402,7 +402,7 @@ PySide6 可在 LGPL/GPL/商业许可下使用。若采用 LGPL 路线，打包�
 2. 再验证 LaMa 局部修复与输出元数据；
 3. 完成无界面的批处理核心；
 4. 完成任务持久化和错误恢复；
-5. 接入 PySide6 批处理界面；
+5. 接入 pywebview/WebView2 轻量批处理界面；
 6. 完成待复核编辑器；
 7. 做端到端验收和 Windows 打包。
 
@@ -415,7 +415,8 @@ PySide6 可在 LGPL/GPL/商业许可下使用。若采用 LGPL 路线，打包�
 - LaMa 论文：<https://arxiv.org/abs/2109.07161>
 - ONNX Runtime Windows：<https://onnxruntime.ai/docs/get-started/with-windows.html>
 - Ultralytics 许可说明：<https://www.ultralytics.com/license>
-- PySide6 包与许可说明：<https://pypi.org/project/PySide6/>
+- pywebview：<https://pywebview.idepy.com/en/guide/>
+- WebView2 分发：<https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution>
 
 ## 17. 已确认的产品决策
 

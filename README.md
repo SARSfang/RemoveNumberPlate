@@ -41,4 +41,16 @@ python -m app.cli resume
 python -m app.cli report
 ```
 
-The desktop drag-and-drop interface is the next milestone.
+The lightweight desktop batch interface is now available for development use.
+
+## Desktop preview
+
+The lightweight Windows shell uses the system WebView2 runtime and does not
+bundle Qt or a separate Chromium runtime:
+
+```powershell
+python run.py
+```
+
+All frontend assets are local. The interface makes no network request and the
+AI pipeline runs in a dedicated worker thread.

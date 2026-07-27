@@ -21,7 +21,7 @@ packages may not provide compatible wheels.
 - M1 reference model and license feasibility: complete; private-photo visual
   acceptance remains pending
 - M2 headless pipeline: complete
-- M3 batch desktop UI: pending
+- M3 lightweight batch desktop UI: in progress
 - M4 exception review editor: pending
 - M5 Windows release candidate: pending
 
@@ -104,3 +104,19 @@ packages may not provide compatible wheels.
   non-ASCII staging test skipped) and five passing real-model integration tests.
 - A real CLI smoke test completed in 1.82 seconds and produced
   `output/m2_smoke/车牌已消除/sample_clean_2.jpg`.
+
+## M3 progress
+
+- Replaced the initial Qt direction with a lightweight pywebview shell using
+  the system Edge WebView2 runtime. Qt is no longer a project dependency.
+- Added a persistent desktop design system and a local-only HTML/CSS/JavaScript
+  interface with batch, review, history, and settings workspaces.
+- Added drag/drop integration, native file/folder dialogs, live immutable job
+  events, pause/resume, cancel-remaining, output-folder access, and device/model
+  status.
+- The frontend loads no CDN or network resource and exposes only allow-listed
+  Python methods across the bridge.
+- Visual review passed at 1280 × 820 after reducing vertical density so all
+  primary controls remain visible.
+- A real WebView2 smoke test verifies both the complete frontend and the Python
+  bridge.

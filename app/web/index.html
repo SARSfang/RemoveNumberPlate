@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self'; img-src 'self' data: file:; connect-src 'none'; object-src 'none'; frame-src 'none'">
+  <title>消除车牌</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>消除车牌</span>
+      </div>
+      <nav class="navigation" aria-label="主要工作区">
+        <button class="nav-item is-active" data-page="batch" type="button">批处理</button>
+        <button class="nav-item" data-page="review" type="button">
+          待复核 <span id="review-badge" class="nav-badge" hidden>0</span>
+        </button>
+        <button class="nav-item" data-page="history" type="button">任务历史</button>
+        <button class="nav-item" data-page="settings" type="button">设置</button>
+      </nav>
+      <div class="version">v0.1</div>
+    </header>
+
+    <main>
+      <section id="page-batch" class="page is-active" aria-labelledby="batch-title">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">AI BATCH WORKSPACE</p>
+            <h1 id="batch-title">批处理</h1>
+            <p class="page-subtitle">拖入成片，自动检测、修复并安全输出。</p>
+          </div>
+          <div class="trust-badge"><span class="status-dot"></span>完全离线</div>
+        </div>
+
+        <section id="drop-zone" class="drop-zone" aria-label="拖放照片或文件夹">
+          <div class="drop-symbol" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <h2>拖入照片或文件夹</h2>
+          <p>支持 JPEG、PNG、TIFF，可递归扫描文件夹</p>
+          <div class="drop-actions">
+            <button id="choose-files" class="button button-primary" type="button">选择照片</button>
+            <button id="choose-folder" class="button" type="button">选择文件夹</button>
+          </div>
+        </section>
+
+        <div class="stats" aria-label="批处理统计">
+          <article class="stat-card"><strong id="stat-total">0</strong><span>总计</span></article>
+          <article class="stat-card"><strong id="stat-completed">0</strong><span>已完成</span></article>
+          <article class="stat-card stat-review"><strong id="stat-review">0</strong><span>待复核</span></article>
+          <article class="stat-card stat-processing"><strong id="stat-processing">0</strong><span>处理中</span></article>
+          <article class="stat-card stat-failed"><strong id="stat-failed">0</strong><span>失败</span></article>
+        </div>
+
+        <section class="work-panel" aria-labelledby="progress-title">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">当前任务</p>
+              <h2 id="progress-title">等待添加照片</h2>
+            </div>
+            <span id="progress-count" class="progress-count">0 / 0</span>
+          </div>
+          <div class="progress-track" role="progressbar" aria-label="总进度"
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>照片</th><th>状态</th><th>耗时</th><th>输出</th></tr></thead>
+              <tbody id="task-rows">
+                <tr class="empty-row"><td colspan="4">添加照片后，任务状态会实时显示在这里。</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel-actions">
+            <button id="pause-button" class="button" type="button" disabled>暂停</button>
+            <button id="cancel-button" class="button button-danger" type="button" disabled>取消剩余任务</button>
+            <span class="action-spacer"></span>
+            <button id="review-button" class="button" type="button" disabled>进入待复核</button>
+          </div>
+        </section>
+      </section>
+
+      <section id="page-review" class="page" aria-labelledby="review-title">
+        <div class="page-heading">
+          <div><p class="eyebrow">EXCEPTION INBOX</p><h1 id="review-title">待复核</h1>
+            <p class="page-subtitle">集中处理低置信度、贴边和异常检测。</p></div>
+        </div>
+        <div id="review-empty" class="empty-state">
+          <div class="empty-glyph" aria-hidden="true"></div>
+          <h2>当前没有需要复核的照片</h2>
+          <p>发现风险时，照片会安全地留在这里，不会被自动修改。</p>
+        </div>
+        <div id="review-list" class="review-list" hidden></div>
+      </section>
+
+      <section id="page-history" class="page" aria-labelledby="history-title">
+        <div class="page-heading">
+          <div><p class="eyebrow">LOCAL JOB HISTORY</p><h1 id="history-title">任务历史</h1>
+            <p class="page-subtitle">恢复未完成任务，快速找到最近输出。</p></div>
+        </div>
+        <div class="history-grid">
+          <article class="info-panel">
+            <p class="panel-kicker">本机任务记录</p>
+            <strong id="history-total">0</strong>
+            <span>只保存文件位置和处理状态，不保存车牌文字。</span>
+          </article>
+          <article class="info-panel">
+            <p class="panel-kicker">隐私</p>
+            <h2>没有云端同步</h2>
+            <span>照片像素、EXIF 和模型推理始终留在这台电脑。</span>
+          </article>
+        </div>
+      </section>
+
+      <section id="page-settings" class="page" aria-labelledby="settings-title">
+        <div class="page-heading">
+          <div><p class="eyebrow">PREFERENCES</p><h1 id="settings-title">设置</h1>
+            <p class="page-subtitle">默认值已经针对摄影批处理优化。</p></div>
+        </div>
+        <div class="settings-panel">
+          <div class="setting-row">
+            <div><label for="preset">处理预设</label><p>平衡速度、检出率和修复上下文。</p></div>
+            <select id="preset"><option>均衡（推荐）</option><option>速度优先</option><option>精细处理</option></select>
+          </div>
+          <div class="setting-row">
+            <div><span class="setting-label">GPU 设备</span><p>检测模型使用的 NVIDIA 显卡。</p></div>
+            <strong id="gpu-name">正在检测…</strong>
+          </div>
+          <div class="setting-row">
+            <div><span class="setting-label">运行模式</span><p>模型会在批次开始时加载一次并复用。</p></div>
+            <strong id="runtime-name">—</strong>
+          </div>
+          <div class="setting-row">
+            <div><span class="setting-label">模型状态</span><p>启动处理前校验固定版本和 SHA-256。</p></div>
+            <strong id="model-state">正在校验…</strong>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
