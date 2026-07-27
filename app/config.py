@@ -1,15 +1,69 @@
-"""全局配置：路径、阈值、模型下载地址等"""
-import os
+"""Application configuration and filesystem locations."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
 from pathlib import Path
 
-# 项目根目录
+from platformdirs import user_data_path, user_log_path
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-# 模型目录
 MODELS_DIR = PROJECT_ROOT / "models"
-YOLO_MODEL_PATH = MODELS_DIR / "yolov8_plate.pt"
-LAMA_MODEL_DIR = MODELS_DIR / "lama"
+MODEL_MANIFEST_PATH = MODELS_DIR / "manifest.json"
 
-# 默认输出与日志目录
-OUTPUT_DIR = PROJECT_ROOT / "output"
-LOGS_DIR = PROJECT_ROOT /
+
+@dataclass(frozen=True, slots=True)
+class ProcessingPreset:
+    """User-facing processing preset.
+
+    Model-specific thresholds remain outside the GUI and can be revised after
+    the M1 benchmark without changing consumers of this object.
+    """
+
+    name: str
+    auto_confidence: float
+    tile_size: int
+    tile_overlap: float
+    context_scale: float
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.auto_confidence <= 1.0:
+            raise ValueError("auto_confidence must be between 0 and 1")
+        if self.tile_size < 256:
+            raise ValueError("tile_size must be at least 256 pixels")
+        if not 0.0 <= self.tile_overlap < 1.0:
+            raise ValueError("tile_overlap must be between 0 and 1")
+        if self.context_scale <= 1.0:
+            raise ValueError("context_scale must be greater than 1")
+
+
+PRESETS: dict[str, ProcessingPreset] = {
+    "speed": ProcessingPreset("speed", 0.70, 1280, 0.15, 3.0),
+    "balanced": ProcessingPreset("balanced", 0.60, 1024, 0.20, 4.0),
+    "quality": ProcessingPreset("quality", 0.50, 896, 0.25, 5.0),
+}
+
+
+@dataclass(frozen=True, slots=True)
+class AppPaths:
+    """Resolved paths for immutable assets and mutable application data."""
+
+    project_root: Path
+    models_dir: Path
+    model_manifest: Path
+    data_dir: Path
+    log_dir: Path
+    job_database: Path
+
+    @classmethod
+    def default(cls) -> AppPaths:
+        data_dir = user_data_path("RemoveNumberPlate", "SARSfang", ensure_exists=False)
+        log_dir = user_log_path("RemoveNumberPlate", "SARSfang", ensure_exists=False)
+        return cls(
+            project_root=PROJECT_ROOT,
+            models_dir=MODELS_DIR,
+            model_manifest=MODEL_MANIFEST_PATH,
+            data_dir=data_dir,
+            log_dir=log_dir,
+            job_database=data_dir / "jobs.sqlite3",
+        )

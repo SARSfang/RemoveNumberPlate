@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.pyd
 .pytest_cache/
+.tmp_pytest*/
 .mypy_cache/
 .ruff_cache/
 .coverage
@@ -19,13 +20,17 @@ env/
 !.env.example
 
 # AI model weights and runtime data
-models/
+models/*
+!models/manifest.json
+!models/README.md
 *.onnx
 *.engine
 *.pt
 *.pth
 *.pdmodel
 *.pdiparams
+testdata/private/
+testdata/public/
 output/
 logs/
 

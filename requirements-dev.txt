@@ -1,0 +1,6 @@
+-r requirements.txt
+
+mypy>=1.10,<3
+pytest>=8.0,<10
+pytest-qt>=4.4,<5
+ruff>=0.9,<1

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "model_id": "pp_yoloe_s_vehicle",
+      "version": "paddlex-3.0.0",
+      "filename": "PP-YOLOE-S_vehicle_infer.tar",
+      "sha256": "1143b3e62e1716ed056870f3788da77457b932cc7efa10b3abca5d24f61d0b2e",
+      "source_url": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-YOLOE-S_vehicle_infer.tar",
+      "homepage": "https://paddlepaddle.github.io/PaddleX/latest/en/module_usage/tutorials/cv_modules/vehicle_detection.html",
+      "format": "paddle-inference-archive",
+      "software_license": "Apache-2.0",
+      "weights_terms": "Published as an official PaddleX inference model; the archive contains no separate license file, so redistribution remains subject to final release review",
+      "enabled": true
+    },
+    {
+      "model_id": "pp_vehicle_plate_detector",
+      "version": "paddledetection-b25522a",
+      "filename": "ch_PP-OCRv3_det_infer.tar.gz",
+      "sha256": "acc7eb42b299cdb4eed2999f4de99c89555767b321c272a9878f688d24503fd9",
+      "source_url": "https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz",
+      "homepage": "https://github.com/PaddlePaddle/PaddleDetection/blob/b25522a0f4bde8c80603f3ba5e3472059972e3b5/deploy/pipeline/docs/tutorials/ppvehicle_plate.md",
+      "format": "paddle-inference-archive",
+      "software_license": "Apache-2.0",
+      "weights_terms": "Published by the official PaddleDetection PP-Vehicle documentation; the archive contains no separate license file, so redistribution remains subject to final release review",
+      "enabled": true
+    },
+    {
+      "model_id": "migan_inpainter",
+      "version": "pipeline-v2",
+      "filename": "migan_pipeline_v2.onnx",
+      "sha256": "6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b",
+      "source_url": "https://huggingface.co/andraniksargsyan/migan/resolve/main/migan_pipeline_v2.onnx",
+      "homepage": "https://github.com/Picsart-AI-Research/MI-GAN",
+      "format": "onnx",
+      "software_license": "MIT",
+      "weights_terms": "Pre-converted model linked by the official MI-GAN repository and hosted by a paper author; final redistribution review remains required",
+      "enabled": true
+    }
+  ]
+}

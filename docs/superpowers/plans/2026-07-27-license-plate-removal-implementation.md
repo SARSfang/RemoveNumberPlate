@@ -199,8 +199,8 @@ THIRD_PARTY_NOTICES.md
 验证命令：
 
 ```powershell
-python scripts/verify_models.py
-python scripts/benchmark_models.py --input testdata/private
+python -m scripts.verify_models
+python -m scripts.benchmark_models --input testdata/private
 python -m pytest tests/integration/test_detector_model.py -q
 python -m pytest tests/integration/test_inpainter_model.py -q
 ```
