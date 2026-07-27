@@ -1,6 +1,6 @@
 # Implementation progress
 
-Updated: 2026-07-27
+Updated: 2026-07-28
 
 ## Environment
 
@@ -20,7 +20,7 @@ packages may not provide compatible wheels.
 - M0 engineering baseline: complete
 - M1 reference model and license feasibility: complete; private-photo visual
   acceptance remains pending
-- M2 headless pipeline: pending
+- M2 headless pipeline: complete
 - M3 batch desktop UI: pending
 - M4 exception review editor: pending
 - M5 Windows release candidate: pending
@@ -30,10 +30,11 @@ packages may not provide compatible wheels.
 - No user training or annotation workflow.
 - Ultralytics, PyTorch, and `simple-lama-inpainting` are not production
   dependencies.
-- The detector and inpainter runtimes remain undecided until M1 benchmarks.
-- Model candidates remain disabled in `models/manifest.json` until their
-  official artifact and SHA-256 are verified. Redistribution approval remains
-  a separate release gate documented in `THIRD_PARTY_NOTICES.md`.
+- The production runtime is PP-YOLOE-S vehicle detection followed by the
+  PP-Vehicle plate detector on the GPU, with OpenCV LaMa ONNX on the CPU.
+- Enabled model artifacts and SHA-256 values are verified before processing.
+  Redistribution approval remains a separate release gate documented in
+  `THIRD_PARTY_NOTICES.md`.
 
 ## M0 verification
 
@@ -86,3 +87,20 @@ packages may not provide compatible wheels.
   (left 0.95x, right 1.00x, top/bottom 0.40x box height) and uses a 12-pixel
   bidirectional feather. On the official close-up this removes the plate frame,
   mounting shadow, and adjacent decal while continuing the bumper texture.
+
+## M2 verification
+
+- The headless batch pipeline discovers JPEG, PNG, and TIFF inputs, skips its
+  own output directories, and isolates failures per image.
+- Outputs are written atomically to a `车牌已消除` subdirectory. Existing files
+  are never overwritten; `_clean_2`, `_clean_3`, and later suffixes are used.
+- EXIF orientation is normalized once. Safe EXIF, ICC, DPI, JPEG quantization,
+  and subsampling metadata are retained where the source format supports them.
+- SQLite job state records completed, review-required, no-plate, and failed
+  results. Jobs interrupted during processing return to the queue on resume.
+- Risk gating prevents uncertain, tiny, edge-touching, abnormal, or overlapping
+  detections from being edited automatically.
+- Ruff and strict mypy pass. The test suite has 59 passing unit tests (one
+  non-ASCII staging test skipped) and five passing real-model integration tests.
+- A real CLI smoke test completed in 1.82 seconds and produced
+  `output/m2_smoke/车牌已消除/sample_clean_2.jpg`.

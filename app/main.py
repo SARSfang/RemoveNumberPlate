@@ -1,7 +1,8 @@
 """Desktop application entry point.
 
-The Qt window is intentionally deferred until the M1 model gate is passed.
-For now this entry point performs a safe environment check and exits cleanly.
+The M2 batch core is available through ``python -m app.cli``. The Qt window is
+the next milestone; this entry point currently performs a safe environment
+check.
 """
 
 from __future__ import annotations
@@ -13,7 +14,8 @@ from app.infrastructure.device_probe import probe_device
 def main() -> int:
     paths = AppPaths.default()
     device = probe_device()
-    print("RemoveNumberPlate foundation is ready.")
+    print("RemoveNumberPlate batch core is ready.")
+    print("Run: python -m app.cli process <image-or-folder>")
     print(f"Model manifest: {paths.model_manifest}")
     print(f"GPU: {device.gpu_name or 'not detected'}")
     return 0
