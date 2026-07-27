@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+
+# AI model weights and runtime data
+models/
+*.onnx
+*.engine
+*.pt
+*.pth
+*.pdmodel
+*.pdiparams
+output/
+logs/
+
+# Build and packaging
+build/
+dist/
+*.spec
+
+# IDE and OS
+.idea/
+.vscode/
+.trae/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Brainstorming visual companion
+.superpowers/
