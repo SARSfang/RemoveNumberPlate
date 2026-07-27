@@ -15,8 +15,9 @@ python -m scripts.verify_models
 
 The production detection path uses `PP-YOLOE-S_vehicle_infer` first and passes
 each vehicle crop to `ch_PP-OCRv3_det_infer`. Extract both archives directly
-under this directory. Inpainting uses the single-file
-`migan_pipeline_v2.onnx`. Paddle model files are copied to an ASCII-only user
+under this directory. Production inpainting uses OpenCV's single-file
+`inpainting_lama_2025jan.onnx`; MI-GAN remains a disabled experiment after
+failing visual review. Paddle model files are copied to an ASCII-only user
 cache at first launch when the project path contains Chinese characters.
 
 The model files are intentionally excluded from Git. Their official URLs and

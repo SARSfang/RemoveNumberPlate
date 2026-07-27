@@ -35,6 +35,18 @@
       "format": "onnx",
       "software_license": "MIT",
       "weights_terms": "Pre-converted model linked by the official MI-GAN repository and hosted by a paper author; final redistribution review remains required",
+      "enabled": false
+    },
+    {
+      "model_id": "opencv_lama_inpainter",
+      "version": "2025jan-quantized",
+      "filename": "inpainting_lama_2025jan.onnx",
+      "sha256": "7df918ac3921d3daf0aae1d219776cf0dc4e4935f035af81841b40adcf74fdf2",
+      "source_url": "https://huggingface.co/opencv/inpainting_lama/resolve/main/inpainting_lama_2025jan.onnx",
+      "homepage": "https://huggingface.co/opencv/inpainting_lama",
+      "format": "onnx",
+      "software_license": "Apache-2.0",
+      "weights_terms": "Published by the Open Source Vision Foundation OpenCV account with all repository files declared Apache-2.0",
       "enabled": true
     }
   ]

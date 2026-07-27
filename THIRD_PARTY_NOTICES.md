@@ -43,8 +43,19 @@ not yet a final release notice.
 - Project license: MIT
 - Model description: MI-GAN 512 Places2 ONNX pipeline linked by the official
   repository and hosted by a paper author.
+- Product status: rejected by visual quality review and disabled.
 - Release note: redistribution must still receive a final terms review before
   packaging.
+
+## OpenCV quantized LaMa inpainting model
+
+- Project: <https://huggingface.co/opencv/inpainting_lama>
+- Artifact: `inpainting_lama_2025jan.onnx`
+- SHA-256:
+  `7df918ac3921d3daf0aae1d219776cf0dc4e4935f035af81841b40adcf74fdf2`
+- Publisher: Open Source Vision Foundation OpenCV account
+- License: Apache License 2.0
+- Product status: selected reference inpainter after visual comparison.
 
 ## PaddleOCR DB post-processing
 

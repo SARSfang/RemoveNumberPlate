@@ -11,6 +11,8 @@ import numpy as np
 from PIL import Image, ImageOps
 
 from app.config import AppPaths
+from app.core.inpainter import Inpainter
+from app.infrastructure.lama_inpainter import LamaInpainter
 from app.infrastructure.migan_inpainter import MiganInpainter
 
 
@@ -25,6 +27,7 @@ def main() -> int:
         metavar=("X1", "Y1", "X2", "Y2"),
     )
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--model", choices=("migan", "lama"), default="migan")
     arguments = parser.parse_args()
 
     with Image.open(arguments.input) as source:
@@ -36,10 +39,17 @@ def main() -> int:
     mask[y1:y2, x1:x2] = 255
 
     start = time.perf_counter()
-    inpainter = MiganInpainter(
-        AppPaths.default().models_dir / "migan_pipeline_v2.onnx",
-        use_gpu=False,
-    )
+    paths = AppPaths.default()
+    inpainter: Inpainter
+    if arguments.model == "lama":
+        inpainter = LamaInpainter(
+            paths.models_dir / "inpainting_lama_2025jan.onnx",
+        )
+    else:
+        inpainter = MiganInpainter(
+            paths.models_dir / "migan_pipeline_v2.onnx",
+            use_gpu=False,
+        )
     startup_seconds = time.perf_counter() - start
     start = time.perf_counter()
     result = inpainter.inpaint(image, mask)
@@ -50,8 +60,7 @@ def main() -> int:
         Image.fromarray(result, mode="RGB").save(arguments.output, quality=95)
 
     report = {
-        "runtime": "onnxruntime-cpu",
-        "providers": list(inpainter.providers),
+        "runtime": f"onnxruntime-cpu-{arguments.model}",
         "startup_seconds": round(startup_seconds, 6),
         "elapsed_seconds": round(elapsed_seconds, 6),
         "width": int(image.shape[1]),

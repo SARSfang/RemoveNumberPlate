@@ -37,11 +37,11 @@ packages may not provide compatible wheels.
 
 ## M0 verification
 
-- 35 unit tests passed; one ASCII-path staging case is skipped only because the
+- 40 unit tests passed; one ASCII-path staging case is skipped only because the
   repository itself is under a Chinese path.
 - Ruff passes for application code, scripts, and tests.
-- Strict mypy passes for all 22 checked application and script modules.
-- Three integration tests pass with the pinned official models.
+- Strict mypy passes for all 25 checked application and script modules.
+- Four integration tests pass with the pinned official models.
 - `run.py` imports successfully and detects the NVIDIA GPU.
 
 ## M1 findings
@@ -65,11 +65,19 @@ packages may not provide compatible wheels.
   a 3.31-second model startup.
 - Detector runtime decision: use PP-YOLOE-S vehicle detection followed by the
   PP-Vehicle plate detector. See `docs/decisions/0001-detector-runtime.md`.
-- Replaced the 381 MB Big-LaMa candidate with the official MI-GAN project's
-  28,079,181-byte ONNX pipeline. SHA-256:
+- Initially replaced the 381 MB Big-LaMa candidate with the official MI-GAN
+  project's 28,079,181-byte ONNX pipeline. SHA-256:
   `6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b`.
 - MI-GAN uses ONNX Runtime CPU: 0.276 seconds for a 512 x 512 synthetic case
   and 0.312 seconds for the 1920 x 1280 official vehicle sample. The tested GPU
   provider was slower at 0.441 seconds and would add a much larger runtime.
-- Inpainting runtime decision: MI-GAN ONNX on CPU. See
+- Visual review rejected MI-GAN: it created an obvious red patch, used a hard
+  edge, and retained the blue country strip. Inference success is no longer
+  treated as visual acceptance.
+- The OpenCV quantized LaMa artifact is pinned at SHA-256
+  `7df918ac3921d3daf0aae1d219776cf0dc4e4935f035af81841b40adcf74fdf2`.
+  It is 92,591,623 bytes and ran the sample crop in about 1.33 seconds after a
+  3.62-second session startup.
+- Inpainting runtime decision: OpenCV LaMa ONNX on a square context crop, with
+  full-plate mask expansion and feathered compositing. See
   `docs/decisions/0002-inpainter-runtime.md`.

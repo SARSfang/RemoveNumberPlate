@@ -1,54 +1,60 @@
-# Decision 0002: MI-GAN ONNX inpainting runtime
+# Decision 0002: OpenCV LaMa ONNX inpainting runtime
 
 Date: 2026-07-28
 
 ## Status
 
-Accepted for the M1 reference implementation.
+Accepted after visual re-evaluation. The earlier MI-GAN decision is rejected.
 
 ## Context
 
-The application needs an offline, pretrained inpainting model that removes a
-small license-plate region without requiring users to train or label data.
-Big-LaMa was the initial candidate, but the currently referenced mirror archive
-is about 381 MB and the original download links are unavailable.
+The application must remove the complete physical plate, not merely make its
+characters unreadable. It must reconstruct plausible bumper texture without
+training by the user.
 
-MI-GAN is the official ICCV 2023 implementation of a mobile-oriented
-inpainting model. Its repository links a pre-converted ONNX pipeline hosted by
-one of the paper's authors. The repository is MIT licensed.
+MI-GAN was initially selected for its 28 MB size and speed. On the official
+vehicle sample it produced a conspicuous red patch, retained the blue country
+strip, and had hard mask edges. Passing an inference smoke test was therefore
+not sufficient evidence of usable photographic quality.
+
+OpenCV publishes a quantized LaMa ONNX model through the Open Source Vision
+Foundation account. The repository declares every file Apache-2.0.
 
 ## Evidence
 
-- Artifact: `migan_pipeline_v2.onnx`
-- Size: 28,079,181 bytes
+- Artifact: `inpainting_lama_2025jan.onnx`
+- Size: 92,591,623 bytes
 - SHA-256:
-  `6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b`
-- Inputs: uint8 RGB NCHW image and uint8 single-channel NCHW mask.
-- The model uses 255 for known pixels and 0 for the remove region; the
-  application adapter exposes the friendlier white-means-remove convention.
-- On an RTX 4060 Ti workstation, ONNX Runtime CPU processed a 512 x 512 test in
-  0.276 seconds, compared with 0.441 seconds for the tested GPU provider.
-- On the official 1920 x 1280 vehicle sample, CPU session startup took 0.308
-  seconds and end-to-end inpainting took 0.312 seconds.
-- The adapter composites only selected pixels, so unmasked source pixels remain
-  bit-identical in memory.
+  `7df918ac3921d3daf0aae1d219776cf0dc4e4935f035af81841b40adcf74fdf2`
+- Inputs: float32 image `[N,3,512,512]` and white-means-remove mask
+  `[N,1,512,512]`.
+- The adapter runs on a square crop around the plate rather than distorting the
+  entire photograph to 512 x 512.
+- The text detector does not cover non-text plate parts such as a blue country
+  strip. Expanding horizontally by 0.75 plate-text heights and vertically by
+  0.20 heights covered the complete plate on the sample.
+- Feathered compositing removes the hard rectangular transition while keeping
+  distant pixels bit-identical.
+- On the 1920 x 1280 sample, CPU session startup took about 3.62 seconds and
+  crop inference plus compositing took about 1.33 seconds.
+- Human inspection of the close-up confirmed that the full plate was removed
+  and the dark bumper and red trim continued across the removed area. MI-GAN's
+  output failed the same inspection.
 
 ## Decision
 
-Use the pre-converted MI-GAN 512 Places2 ONNX pipeline with ONNX Runtime CPU.
-Keep vehicle and plate detection on the GPU.
+Use OpenCV's quantized LaMa ONNX model on CPU with context-crop inference,
+full-plate mask expansion, and feathered compositing.
 
-This avoids a second large CUDA runtime, keeps the inpainting model around 28
-MB, and provides a fast no-training path on the target workstation.
+Keep MI-GAN in the manifest as a disabled experiment only. It must not be used
+for automatic production output.
 
 ## Consequences
 
-- The total pinned model payload is approximately 62.4 MB.
-- MI-GAN may be weaker than Big-LaMa for very large removal regions, but a
-  license plate is a small, bounded target.
-- The final mask must be conservative; an oversized mask may remove plate
-  frames or nearby bumper details.
-- Visual acceptance still requires a representative private set of the user's
-  automotive photographs before thresholds and mask expansion are frozen.
-- Weight redistribution remains a final release review item even though the
-  source repository and model page declare MIT.
+- Total enabled model payload is approximately 127 MB, still practical for a
+  lightweight offline desktop application.
+- Quality is prioritized over MI-GAN's roughly one-second speed advantage.
+- A visually reviewed private automotive-photo set remains required before
+  mask expansion ratios are frozen.
+- Low-confidence or visually risky results must enter the exception review
+  queue instead of being silently accepted.
