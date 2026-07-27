@@ -37,7 +37,7 @@ packages may not provide compatible wheels.
 
 ## M0 verification
 
-- 40 unit tests passed; one ASCII-path staging case is skipped only because the
+- 41 unit tests passed; one ASCII-path staging case is skipped only because the
   repository itself is under a Chinese path.
 - Ruff passes for application code, scripts, and tests.
 - Strict mypy passes for all 25 checked application and script modules.
@@ -81,3 +81,8 @@ packages may not provide compatible wheels.
 - Inpainting runtime decision: OpenCV LaMa ONNX on a square context crop, with
   full-plate mask expansion and feathered compositing. See
   `docs/decisions/0002-inpainter-runtime.md`.
+- Follow-up visual review found residual edge transitions. The production
+  default now removes a larger region around the detected text box
+  (left 0.95x, right 1.00x, top/bottom 0.40x box height) and uses a 12-pixel
+  bidirectional feather. On the official close-up this removes the plate frame,
+  mounting shadow, and adjacent decal while continuing the bumper texture.

@@ -31,10 +31,11 @@ Foundation account. The repository declares every file Apache-2.0.
 - The adapter runs on a square crop around the plate rather than distorting the
   entire photograph to 512 x 512.
 - The text detector does not cover non-text plate parts such as a blue country
-  strip. Expanding horizontally by 0.75 plate-text heights and vertically by
-  0.20 heights covered the complete plate on the sample.
-- Feathered compositing removes the hard rectangular transition while keeping
-  distant pixels bit-identical.
+  strip, mounting shadows, and the plate frame. The default mask now expands
+  by 0.95 text-box heights on the left, 1.00 on the right, and 0.40 vertically.
+- A 12-pixel bidirectional feather blends inside and outside the expanded mask.
+  The original plate remains inside the fully generated core, while the outer
+  transition gradually returns to source pixels.
 - On the 1920 x 1280 sample, CPU session startup took about 3.62 seconds and
   crop inference plus compositing took about 1.33 seconds.
 - Human inspection of the close-up confirmed that the full plate was removed
@@ -44,7 +45,7 @@ Foundation account. The repository declares every file Apache-2.0.
 ## Decision
 
 Use OpenCV's quantized LaMa ONNX model on CPU with context-crop inference,
-full-plate mask expansion, and feathered compositing.
+generous full-plate mask expansion, and bidirectional feathered compositing.
 
 Keep MI-GAN in the manifest as a disabled experiment only. It must not be used
 for automatic production output.

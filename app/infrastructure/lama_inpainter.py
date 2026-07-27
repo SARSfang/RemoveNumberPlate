@@ -45,7 +45,12 @@ def _feathered_composite(
             cv2.GaussianBlur(binary, (kernel, kernel), feather_radius / 2),
             dtype=np.float32,
         )
-        alpha[mask > 0] = 1.0
+        core = cv2.erode(
+            binary,
+            np.ones((kernel, kernel), dtype=np.uint8),
+            iterations=1,
+        )
+        alpha[core > 0] = 1.0
     alpha = alpha[:, :, None]
     blended = generated.astype(np.float32) * alpha + original.astype(np.float32) * (
         1.0 - alpha
@@ -61,7 +66,7 @@ class LamaInpainter:
         model_path: Path,
         *,
         context_scale: float = 4.0,
-        feather_radius: int = 5,
+        feather_radius: int = 12,
     ) -> None:
         if not model_path.is_file():
             raise InpainterError(f"LaMa model not found: {model_path}")

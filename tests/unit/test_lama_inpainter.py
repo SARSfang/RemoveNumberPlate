@@ -13,10 +13,22 @@ def test_context_bounds_are_square_and_inside_image() -> None:
 
 
 def test_feathered_composite_replaces_mask_core() -> None:
-    original = np.zeros((20, 20, 3), dtype=np.uint8)
+    original = np.zeros((40, 40, 3), dtype=np.uint8)
     generated = np.full_like(original, 200)
-    mask = np.zeros((20, 20), dtype=np.uint8)
-    mask[8:12, 8:12] = 255
+    mask = np.zeros((40, 40), dtype=np.uint8)
+    mask[10:30, 10:30] = 255
     result = _feathered_composite(original, generated, mask, 3)
-    np.testing.assert_array_equal(result[9, 9], [200, 200, 200])
+    np.testing.assert_array_equal(result[20, 20], [200, 200, 200])
     np.testing.assert_array_equal(result[0, 0], [0, 0, 0])
+
+
+def test_feathered_composite_uses_gradual_boundary() -> None:
+    original = np.zeros((60, 60, 3), dtype=np.uint8)
+    generated = np.full_like(original, 200)
+    mask = np.zeros((60, 60), dtype=np.uint8)
+    mask[15:45, 15:45] = 255
+
+    result = _feathered_composite(original, generated, mask, 7)
+
+    assert 0 < result[15, 30, 0] < 200
+    assert result[30, 30, 0] == 200

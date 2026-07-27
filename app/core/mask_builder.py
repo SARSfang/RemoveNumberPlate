@@ -14,10 +14,10 @@ from app.domain.detection import Detection
 class PlateMaskPolicy:
     """Expansion ratios account for non-text plate borders and country strips."""
 
-    left_by_height: float = 0.70
-    right_by_height: float = 0.75
-    top_by_height: float = 0.25
-    bottom_by_height: float = 0.20
+    left_by_height: float = 0.95
+    right_by_height: float = 1.00
+    top_by_height: float = 0.40
+    bottom_by_height: float = 0.40
 
     def __post_init__(self) -> None:
         ratios = (
