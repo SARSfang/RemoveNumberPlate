@@ -2,22 +2,27 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import sys
 import threading
 import time
 from collections.abc import Callable, Sequence
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import webview
+from PIL import Image
 
-from app.cli import build_processor
+from app.cli import build_manual_processor, build_processor
 from app.config import AppPaths
 from app.core.batch import Processor
-from app.core.image_io import discover_images
+from app.core.image_io import discover_images, load_image
 from app.core.job_store import JobStore
+from app.core.manual_mask import build_manual_mask
+from app.core.pipeline import ManualMaskProcessor
 from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
 from app.infrastructure.device_probe import probe_device
@@ -25,6 +30,7 @@ from app.infrastructure.model_registry import load_manifest
 
 EventSink = Callable[[str, dict[str, object]], None]
 ProcessorFactory = Callable[[], Processor]
+ManualProcessorFactory = Callable[[], ManualMaskProcessor]
 
 
 def frontend_directory() -> Path:
@@ -147,6 +153,7 @@ class BatchService:
                         "item_started",
                         {
                             "source": str(source),
+                            "job_id": identifier,
                             "name": source.name,
                             "index": index,
                             "total": len(jobs),
@@ -168,12 +175,14 @@ class BatchService:
                         "item_finished",
                         {
                             "source": str(source),
+                            "job_id": identifier,
                             "name": source.name,
                             "index": index,
                             "total": len(jobs),
                             "status": result.status.value,
                             "elapsed": round(result.elapsed_seconds, 3),
                             "output": str(result.output) if result.output else None,
+                            "detection_count": result.detection_count,
                             "risks": [risk.value for risk in result.risks],
                             "error": result.error,
                         },
@@ -191,11 +200,26 @@ class BatchService:
 class DesktopApi:
     """Small allow-listed API exposed to the bundled local frontend."""
 
-    def __init__(self, processor_factory: ProcessorFactory | None = None) -> None:
+    def __init__(
+        self,
+        processor_factory: ProcessorFactory | None = None,
+        manual_processor_factory: ManualProcessorFactory | None = None,
+        *,
+        job_database: Path | None = None,
+    ) -> None:
         self._window: webview.Window | None = None
-        self._service = BatchService(self._send_event, processor_factory)
+        self._job_database = job_database or AppPaths.default().job_database
+        self._service = BatchService(
+            self._send_event,
+            processor_factory,
+            job_database=self._job_database,
+        )
+        self._manual_processor_factory = manual_processor_factory or build_manual_processor
+        self._manual_processor: ManualMaskProcessor | None = None
+        self._review_lock = threading.Lock()
+        self._review_busy = False
 
-    def bind_window(self, window: webview.Window) -> None:
+    def _bind_window(self, window: webview.Window) -> None:
         self._window = window
 
     def _send_event(self, name: str, payload: dict[str, object]) -> None:
@@ -216,7 +240,7 @@ class DesktopApi:
             for artifact in load_manifest(paths.model_manifest)
             if artifact.enabled
         ]
-        with JobStore(paths.job_database) as store:
+        with JobStore(self._job_database) as store:
             counts = store.counts()
         return {
             "gpu": device.gpu_name or "未检测到 NVIDIA GPU",
@@ -230,6 +254,135 @@ class DesktopApi:
     def frontend_ready(self) -> bool:
         """Acknowledge that assets and the JS bridge completed initialization."""
 
+        return True
+
+    def list_review_jobs(self) -> list[dict[str, object]]:
+        with JobStore(self._job_database) as store:
+            jobs = store.list_jobs((JobStatus.REVIEW_REQUIRED,))
+        return [
+            {
+                "id": job.id,
+                "name": job.source.name,
+                "source": str(job.source),
+                "risks": [risk.value for risk in job.risks],
+                "detection_count": len(job.detections),
+            }
+            for job in jobs
+        ]
+
+    def get_review_job(self, identifier: str) -> dict[str, object]:
+        with JobStore(self._job_database) as store:
+            job = store.get_job(identifier)
+            commands = store.latest_mask_revision(identifier)
+        if job.status is not JobStatus.REVIEW_REQUIRED:
+            raise ValueError("job is not awaiting review")
+        loaded = load_image(job.source)
+        original_height, original_width = loaded.pixels_rgb.shape[:2]
+        preview = Image.fromarray(loaded.pixels_rgb, mode="RGB")
+        preview.thumbnail((1800, 1200), Image.Resampling.LANCZOS)
+        buffer = BytesIO()
+        preview.save(buffer, format="JPEG", quality=88, optimize=True)
+        data_url = "data:image/jpeg;base64," + base64.b64encode(
+            buffer.getvalue()
+        ).decode("ascii")
+        return {
+            "id": job.id,
+            "name": job.source.name,
+            "source": str(job.source),
+            "image": data_url,
+            "width": original_width,
+            "height": original_height,
+            "preview_width": preview.width,
+            "preview_height": preview.height,
+            "detections": [
+                {
+                    "x1": detection.box.x1,
+                    "y1": detection.box.y1,
+                    "x2": detection.box.x2,
+                    "y2": detection.box.y2,
+                    "confidence": detection.confidence,
+                }
+                for detection in job.detections
+            ],
+            "commands": commands,
+            "risks": [risk.value for risk in job.risks],
+        }
+
+    def reprocess_review(
+        self,
+        identifier: str,
+        commands: list[dict[str, object]],
+    ) -> dict[str, object]:
+        with self._review_lock:
+            if self._review_busy or self._service.busy:
+                return {"accepted": False, "message": "当前有其他 AI 任务正在运行。"}
+            self._review_busy = True
+        threading.Thread(
+            target=self._run_review,
+            args=(identifier, commands),
+            name="plate-removal-review",
+            daemon=True,
+        ).start()
+        return {"accepted": True, "message": ""}
+
+    def _run_review(
+        self,
+        identifier: str,
+        commands: list[dict[str, object]],
+    ) -> None:
+        self._send_event("review_started", {"job_id": identifier})
+        try:
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+                if job.status is not JobStatus.REVIEW_REQUIRED:
+                    raise ValueError("job is not awaiting review")
+                store.record_mask_revision(identifier, commands)
+                loaded = load_image(job.source)
+                mask = build_manual_mask(
+                    (
+                        int(loaded.pixels_rgb.shape[0]),
+                        int(loaded.pixels_rgb.shape[1]),
+                    ),
+                    job.detections,
+                    commands,
+                )
+                processor = self._manual_processor
+                if processor is None:
+                    processor = self._manual_processor_factory()
+                    self._manual_processor = processor
+                result = processor.process(job.source, mask)
+                store.record_result(identifier, result)
+            self._send_event(
+                "review_finished",
+                {
+                    "job_id": identifier,
+                    "status": result.status.value,
+                    "output": str(result.output) if result.output else None,
+                    "elapsed": round(result.elapsed_seconds, 3),
+                },
+            )
+        except Exception as error:
+            self._send_event(
+                "review_failed",
+                {
+                    "job_id": identifier,
+                    "message": f"{type(error).__name__}: {error}",
+                },
+            )
+        finally:
+            with self._review_lock:
+                self._review_busy = False
+
+    def skip_review(self, identifier: str) -> bool:
+        with self._review_lock:
+            if self._review_busy:
+                return False
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+                if job.status is not JobStatus.REVIEW_REQUIRED:
+                    return False
+                store.set_status(identifier, JobStatus.CANCELLED)
+        self._send_event("review_skipped", {"job_id": identifier})
         return True
 
     def choose_files(self) -> list[str]:
@@ -275,7 +428,7 @@ class DesktopApi:
         os.startfile(target)
         return True
 
-    def on_drop(self, event: dict[str, Any]) -> None:
+    def _on_drop(self, event: dict[str, Any]) -> None:
         files = event.get("dataTransfer", {}).get("files", [])
         paths = [
             str(file["pywebviewFullPath"])
@@ -303,12 +456,12 @@ def launch() -> int:
     )
     if window is None:
         raise RuntimeError("failed to create desktop window")
-    api.bind_window(window)
+    api._bind_window(window)
 
     def attach_drop_handler() -> None:
         drop_zone = window.dom.get_element("#drop-zone")
         if drop_zone is not None:
-            drop_zone.events.drop += api.on_drop
+            drop_zone.events.drop += api._on_drop
 
     window.events.loaded += attach_drop_handler
     webview.start(gui="edgechromium", debug=False, private_mode=True)

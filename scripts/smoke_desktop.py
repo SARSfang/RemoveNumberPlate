@@ -36,7 +36,7 @@ def main() -> int:
     )
     if window is None:
         return 1
-    api.bind_window(window)
+    api._bind_window(window)
 
     def close_after_load() -> None:
         loaded.set()

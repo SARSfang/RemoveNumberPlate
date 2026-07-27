@@ -54,3 +54,7 @@ python run.py
 
 All frontend assets are local. The interface makes no network request and the
 AI pipeline runs in a dedicated worker thread.
+
+Risky detections appear in the separate `待复核` workspace. The editor supports
+rectangles, add/erase brushes, deleting false-positive boxes, undo/redo,
+zoom/pan, and one-click local reprocessing.

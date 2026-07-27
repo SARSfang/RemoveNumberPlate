@@ -17,6 +17,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; min-width: 1040px; min-height: 680px; background: var(--canvas); color: var(--text); }
 body { font-size: 14px; line-height: 1.5; }
 button, select { font: inherit; }
@@ -120,10 +121,45 @@ tbody tr:hover:not(.empty-row) { background: rgba(29, 42, 61, .65); }
 .empty-state p { color: var(--secondary); }
 .empty-glyph { width: 58px; height: 44px; margin-bottom: 16px; border: 1px solid #405574; border-radius: 10px; background: linear-gradient(135deg, #172640, #111926); position: relative; }
 .empty-glyph::after { content: ""; position: absolute; inset: 12px 9px; border: 2px dashed #526988; border-radius: 4px; }
-.review-list { display: grid; gap: 10px; }
-.review-item { padding: 16px; border: 1px solid #694f28; border-radius: 10px; background: #211b13; }
-.review-item strong { display: block; }
-.review-item span { color: #d4bd92; font-size: 12px; }
+.review-workspace {
+  height: calc(100vh - 220px); min-height: 450px; display: grid;
+  grid-template-columns: 230px minmax(0, 1fr); overflow: hidden;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--surface);
+}
+.review-sidebar { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--border); background: #0f1723; }
+.review-sidebar-heading { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid var(--border); color: var(--secondary); font-size: 12px; }
+.review-sidebar-heading strong { min-width: 24px; padding: 2px 7px; border-radius: 12px; background: #5a4019; color: #ffd58a; text-align: center; }
+.review-list { overflow: auto; padding: 8px; }
+.review-item {
+  width: 100%; padding: 11px 10px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--text); text-align: left; cursor: pointer;
+}
+.review-item:hover { background: var(--surface-raised); }
+.review-item.is-active { border-color: #6b552e; background: #251e14; }
+.review-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-item span { display: block; margin-top: 3px; color: #d4bd92; font-size: 11px; }
+.editor-panel { min-width: 0; display: grid; grid-template-rows: 48px minmax(0, 1fr) 66px; }
+.editor-toolbar { display: flex; align-items: center; gap: 6px; padding: 0 10px; overflow-x: auto; border-bottom: 1px solid var(--border); background: var(--surface-raised); }
+.tool-button {
+  flex: 0 0 auto; min-height: 32px; padding: 0 10px; border: 1px solid transparent;
+  border-radius: 6px; background: transparent; color: var(--secondary); cursor: pointer; font: inherit;
+  font-size: 12px; font-weight: 650;
+}
+.tool-button:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+.tool-button.is-active { border-color: #476da8; background: #203a60; color: #fff; }
+.tool-button:disabled { opacity: .35; cursor: default; }
+.toolbar-divider { flex: 0 0 auto; width: 1px; height: 22px; margin: 0 3px; background: var(--border); }
+.brush-control { flex: 0 0 auto; color: var(--secondary); font-size: 12px; }
+#brush-size { width: 94px; accent-color: var(--primary); }
+.zoom-hint { margin-left: auto; padding-left: 8px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.canvas-stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #070a10; user-select: none; }
+#review-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; outline: none; }
+#review-canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--primary); }
+.canvas-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--secondary); background: rgba(7, 10, 16, .76); }
+.editor-footer { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--border); background: var(--surface-raised); }
+.editor-footer > div { min-width: 0; margin-right: auto; }
+.editor-footer strong, .editor-footer span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor-footer span { color: var(--warning); font-size: 11px; }
 
 .history-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .info-panel { min-height: 180px; padding: 24px; display: flex; flex-direction: column; align-items: flex-start; }

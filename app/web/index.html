@@ -96,7 +96,42 @@
           <h2>当前没有需要复核的照片</h2>
           <p>发现风险时，照片会安全地留在这里，不会被自动修改。</p>
         </div>
-        <div id="review-list" class="review-list" hidden></div>
+        <div id="review-workspace" class="review-workspace" hidden>
+          <aside class="review-sidebar" aria-label="待复核照片">
+            <div class="review-sidebar-heading">
+              <span>待处理</span><strong id="review-queue-count">0</strong>
+            </div>
+            <div id="review-list" class="review-list"></div>
+          </aside>
+          <section class="editor-panel" aria-label="人工掩码编辑器">
+            <div class="editor-toolbar" role="toolbar" aria-label="掩码工具">
+              <button class="tool-button is-active" data-tool="rectangle" type="button" title="矩形框 (R)">矩形框</button>
+              <button class="tool-button" data-tool="brush_add" type="button" title="画笔 (B)">画笔</button>
+              <button class="tool-button" data-tool="brush_erase" type="button" title="橡皮擦 (E)">橡皮擦</button>
+              <button class="tool-button" data-tool="remove_detection" type="button" title="点击删除误检框">删除自动框</button>
+              <span class="toolbar-divider"></span>
+              <label class="brush-control" for="brush-size">笔刷 <span id="brush-size-value">36</span></label>
+              <input id="brush-size" type="range" min="8" max="160" value="36">
+              <span class="toolbar-divider"></span>
+              <button id="undo-button" class="tool-button" type="button" title="撤销 (Ctrl+Z)" disabled>撤销</button>
+              <button id="redo-button" class="tool-button" type="button" title="重做 (Ctrl+Y)" disabled>重做</button>
+              <button id="restore-button" class="tool-button" type="button">恢复自动框</button>
+              <span class="zoom-hint">滚轮缩放 · 拖动画布平移</span>
+            </div>
+            <div id="canvas-stage" class="canvas-stage">
+              <canvas id="review-canvas" tabindex="0" aria-label="待复核照片与车牌掩码"></canvas>
+              <div id="canvas-loading" class="canvas-loading">正在载入预览…</div>
+            </div>
+            <div class="editor-footer">
+              <div>
+                <strong id="review-file-name">—</strong>
+                <span id="review-risk-text">自动检测存在风险，原图尚未修改</span>
+              </div>
+              <button id="skip-review-button" class="button" type="button">跳过此图</button>
+              <button id="confirm-review-button" class="button button-primary" type="button">确认并重修</button>
+            </div>
+          </section>
+        </div>
       </section>
 
       <section id="page-history" class="page" aria-labelledby="history-title">

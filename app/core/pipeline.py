@@ -5,6 +5,9 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
+import numpy as np
+from numpy.typing import NDArray
+
 from app.core.detector import Detector
 from app.core.image_io import allocate_output_path, load_image, write_image_atomic
 from app.core.inpainter import Inpainter
@@ -63,6 +66,7 @@ class ImageProcessor:
                 risks=risks,
                 status=JobStatus.REVIEW_REQUIRED,
                 detection_count=len(detections),
+                detections=tuple(detections),
             )
 
         mask = build_plate_mask(image_shape, detections, self._mask_policy)
@@ -79,4 +83,35 @@ class ImageProcessor:
             time.perf_counter() - start,
             status=JobStatus.COMPLETED,
             detection_count=len(detections),
+            detections=tuple(detections),
+        )
+
+
+class ManualMaskProcessor:
+    """Apply a user-confirmed full-resolution mask without re-running detection."""
+
+    def __init__(self, inpainter: Inpainter) -> None:
+        self._inpainter = inpainter
+
+    def process(
+        self,
+        source: Path,
+        mask: NDArray[np.uint8],
+    ) -> ProcessingResult:
+        start = time.perf_counter()
+        loaded = load_image(source)
+        if mask.shape != loaded.pixels_rgb.shape[:2]:
+            raise ValueError("manual mask size must match the orientation-normalized image")
+        result_pixels = self._inpainter.inpaint(loaded.pixels_rgb, mask)
+        while True:
+            output = allocate_output_path(source)
+            try:
+                write_image_atomic(loaded, result_pixels, output)
+                break
+            except FileExistsError:
+                continue
+        return ProcessingResult(
+            output,
+            time.perf_counter() - start,
+            status=JobStatus.COMPLETED,
         )

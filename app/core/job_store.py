@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from app.domain.detection import BoundingBox, Detection
 from app.domain.job import JobStatus, RiskReason
 from app.domain.result import ProcessingResult
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 INTERRUPTED_STATUSES = (
     JobStatus.DETECTING,
     JobStatus.INPAINTING,
@@ -28,6 +30,7 @@ class StoredJob:
     status: JobStatus
     risks: tuple[RiskReason, ...]
     error: str | None
+    detections: tuple[Detection, ...]
 
 
 class JobStore:
@@ -50,12 +53,8 @@ class JobStore:
             row = self._connection.execute(
                 "SELECT version FROM schema_info LIMIT 1"
             ).fetchone()
-            if row is None:
-                self._connection.execute(
-                    "INSERT INTO schema_info(version) VALUES (?)",
-                    (SCHEMA_VERSION,),
-                )
-            elif int(row["version"]) != SCHEMA_VERSION:
+            current_version = int(row["version"]) if row is not None else 0
+            if current_version > SCHEMA_VERSION:
                 raise RuntimeError(f"unsupported job database version: {row['version']}")
             self._connection.execute(
                 """
@@ -71,6 +70,41 @@ class JobStore:
                 )
                 """
             )
+            self._connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS detections (
+                    job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+                    ordinal INTEGER NOT NULL,
+                    x1 REAL NOT NULL,
+                    y1 REAL NOT NULL,
+                    x2 REAL NOT NULL,
+                    y2 REAL NOT NULL,
+                    confidence REAL NOT NULL,
+                    source_tile INTEGER,
+                    PRIMARY KEY(job_id, ordinal)
+                )
+                """
+            )
+            self._connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS mask_revisions (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+                    commands_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            if row is None:
+                self._connection.execute(
+                    "INSERT INTO schema_info(version) VALUES (?)",
+                    (SCHEMA_VERSION,),
+                )
+            elif current_version < SCHEMA_VERSION:
+                self._connection.execute(
+                    "UPDATE schema_info SET version = ?",
+                    (SCHEMA_VERSION,),
+                )
 
     def close(self) -> None:
         self._connection.close()
@@ -120,6 +154,31 @@ class JobStore:
                     identifier,
                 ),
             )
+            self._connection.execute(
+                "DELETE FROM detections WHERE job_id = ?",
+                (identifier,),
+            )
+            self._connection.executemany(
+                """
+                INSERT INTO detections(
+                    job_id, ordinal, x1, y1, x2, y2, confidence, source_tile
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    (
+                        identifier,
+                        ordinal,
+                        detection.box.x1,
+                        detection.box.y1,
+                        detection.box.x2,
+                        detection.box.y2,
+                        detection.confidence,
+                        detection.source_tile,
+                    )
+                    for ordinal, detection in enumerate(result.detections)
+                ),
+            )
         if cursor.rowcount != 1:
             raise KeyError(identifier)
 
@@ -161,19 +220,92 @@ class JobStore:
             """,
             parameters,
         ).fetchall()
-        return tuple(
-            StoredJob(
-                id=str(row["id"]),
-                source=Path(str(row["source"])),
-                output=Path(str(row["output"])) if row["output"] else None,
-                status=JobStatus(str(row["status"])),
-                risks=tuple(
-                    RiskReason(value) for value in json.loads(str(row["risks_json"]))
+        return tuple(self._stored_job_from_row(row) for row in rows)
+
+    def get_job(self, identifier: str) -> StoredJob:
+        row = self._connection.execute(
+            """
+            SELECT id, source, output, status, risks_json, error
+            FROM jobs WHERE id = ?
+            """,
+            (identifier,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(identifier)
+        return self._stored_job_from_row(row)
+
+    def _stored_job_from_row(self, row: sqlite3.Row) -> StoredJob:
+        identifier = str(row["id"])
+        detection_rows = self._connection.execute(
+            """
+            SELECT x1, y1, x2, y2, confidence, source_tile
+            FROM detections WHERE job_id = ? ORDER BY ordinal ASC
+            """,
+            (identifier,),
+        ).fetchall()
+        detections = tuple(
+            Detection(
+                BoundingBox(
+                    float(detection["x1"]),
+                    float(detection["y1"]),
+                    float(detection["x2"]),
+                    float(detection["y2"]),
                 ),
-                error=str(row["error"]) if row["error"] else None,
+                float(detection["confidence"]),
+                int(detection["source_tile"])
+                if detection["source_tile"] is not None
+                else None,
             )
-            for row in rows
+            for detection in detection_rows
         )
+        return StoredJob(
+            id=identifier,
+            source=Path(str(row["source"])),
+            output=Path(str(row["output"])) if row["output"] else None,
+            status=JobStatus(str(row["status"])),
+            risks=tuple(
+                RiskReason(value) for value in json.loads(str(row["risks_json"]))
+            ),
+            error=str(row["error"]) if row["error"] else None,
+            detections=detections,
+        )
+
+    def record_mask_revision(
+        self,
+        identifier: str,
+        commands: Sequence[Mapping[str, object]],
+    ) -> str:
+        self.get_job(identifier)
+        revision_id = str(uuid4())
+        with self._connection:
+            self._connection.execute(
+                """
+                INSERT INTO mask_revisions(id, job_id, commands_json, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    revision_id,
+                    identifier,
+                    json.dumps(list(commands), ensure_ascii=False),
+                    datetime.now(UTC).isoformat(),
+                ),
+            )
+        return revision_id
+
+    def latest_mask_revision(self, identifier: str) -> list[dict[str, object]]:
+        row = self._connection.execute(
+            """
+            SELECT commands_json FROM mask_revisions
+            WHERE job_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1
+            """,
+            (identifier,),
+        ).fetchone()
+        if row is None:
+            return []
+        value = json.loads(str(row["commands_json"]))
+        if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+            raise RuntimeError("invalid persisted mask revision")
+        return value
 
     def counts(self) -> dict[str, int]:
         rows = self._connection.execute(

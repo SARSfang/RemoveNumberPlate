@@ -21,8 +21,9 @@ packages may not provide compatible wheels.
 - M1 reference model and license feasibility: complete; private-photo visual
   acceptance remains pending
 - M2 headless pipeline: complete
-- M3 lightweight batch desktop UI: in progress
-- M4 exception review editor: pending
+- M3 lightweight batch desktop UI: complete
+- M4 exception review editor: in progress; implementation complete, user
+  acceptance on private photos remains pending
 - M5 Windows release candidate: pending
 
 ## Current decisions
@@ -120,3 +121,18 @@ packages may not provide compatible wheels.
   primary controls remain visible.
 - A real WebView2 smoke test verifies both the complete frontend and the Python
   bridge.
+
+## M4 progress
+
+- Review-required jobs retain their detector boxes in the migrated SQLite v2
+  schema. Manual edit commands are persisted as compact source-coordinate
+  revisions instead of full-resolution bitmap history.
+- The separate review workspace provides a thumbnail queue, large image canvas,
+  rectangle, brush, eraser, remove-automatic-box, brush size, undo, redo,
+  restore, wheel zoom, space-drag pan, skip, and confirm-and-reprocess actions.
+- Manual reprocessing bypasses detection and reuses a lazily loaded LaMa
+  session. Failed attempts keep the saved edit revision for retry.
+- A real-model integration test verifies the manual-mask output path and source
+  preservation.
+- The editor passed a 1440 × 900 rendered visual review with the toolbar,
+  queue, canvas, risk message, and primary actions visible without scrolling.

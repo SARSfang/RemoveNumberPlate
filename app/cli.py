@@ -10,7 +10,7 @@ from typing import Any
 from app.config import AppPaths
 from app.core.batch import BatchReport, process_batch, resume_batch
 from app.core.job_store import JobStore
-from app.core.pipeline import ImageProcessor
+from app.core.pipeline import ImageProcessor, ManualMaskProcessor
 from app.core.two_stage_detector import VehicleFirstPlateDetector
 from app.domain.job import JobStatus
 from app.infrastructure.lama_inpainter import LamaInpainter
@@ -48,6 +48,14 @@ def build_processor(auto_confidence: float) -> ImageProcessor:
         detector,
         inpainter,
         auto_confidence=auto_confidence,
+    )
+
+
+def build_manual_processor() -> ManualMaskProcessor:
+    paths = AppPaths.default()
+    _verify_enabled_models(paths)
+    return ManualMaskProcessor(
+        LamaInpainter(paths.models_dir / "inpainting_lama_2025jan.onnx")
     )
 
 
