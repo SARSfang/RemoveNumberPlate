@@ -10,11 +10,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from app.domain.detection import BoundingBox, Detection
+from app.domain.detection import BoundingBox, Detection, Quadrilateral
 from app.domain.job import JobStatus, RiskReason
 from app.domain.result import ProcessingResult
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 INTERRUPTED_STATUSES = (
     JobStatus.DETECTING,
     JobStatus.INPAINTING,
@@ -127,6 +127,7 @@ class JobStore:
                     y2 REAL NOT NULL,
                     confidence REAL NOT NULL,
                     source_tile INTEGER,
+                    polygon_json TEXT,
                     PRIMARY KEY(job_id, ordinal)
                 )
                 """
@@ -155,6 +156,17 @@ class JobStore:
                     if "elapsed_seconds" not in columns:
                         self._connection.execute(
                             "ALTER TABLE jobs ADD COLUMN elapsed_seconds REAL"
+                        )
+                if current_version < 4:
+                    detection_columns = {
+                        str(column["name"])
+                        for column in self._connection.execute(
+                            "PRAGMA table_info(detections)"
+                        )
+                    }
+                    if "polygon_json" not in detection_columns:
+                        self._connection.execute(
+                            "ALTER TABLE detections ADD COLUMN polygon_json TEXT"
                         )
                 self._connection.execute(
                     "UPDATE schema_info SET version = ?",
@@ -224,9 +236,10 @@ class JobStore:
             self._connection.executemany(
                 """
                 INSERT INTO detections(
-                    job_id, ordinal, x1, y1, x2, y2, confidence, source_tile
+                    job_id, ordinal, x1, y1, x2, y2, confidence, source_tile,
+                    polygon_json
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     (
@@ -238,6 +251,11 @@ class JobStore:
                         detection.box.y2,
                         detection.confidence,
                         detection.source_tile,
+                        (
+                            json.dumps(detection.polygon.points)
+                            if detection.polygon is not None
+                            else None
+                        ),
                     )
                     for ordinal, detection in enumerate(result.detections)
                 ),
@@ -303,26 +321,37 @@ class JobStore:
         identifier = str(row["id"])
         detection_rows = self._connection.execute(
             """
-            SELECT x1, y1, x2, y2, confidence, source_tile
+            SELECT x1, y1, x2, y2, confidence, source_tile, polygon_json
             FROM detections WHERE job_id = ? ORDER BY ordinal ASC
             """,
             (identifier,),
         ).fetchall()
-        detections = tuple(
-            Detection(
-                BoundingBox(
-                    float(detection["x1"]),
-                    float(detection["y1"]),
-                    float(detection["x2"]),
-                    float(detection["y2"]),
-                ),
-                float(detection["confidence"]),
-                int(detection["source_tile"])
-                if detection["source_tile"] is not None
-                else None,
+        detections: list[Detection] = []
+        for detection in detection_rows:
+            polygon: Quadrilateral | None = None
+            if detection["polygon_json"] is not None:
+                try:
+                    raw_polygon = json.loads(str(detection["polygon_json"]))
+                    polygon = Quadrilateral(
+                        tuple((float(point[0]), float(point[1])) for point in raw_polygon)
+                    )
+                except (TypeError, ValueError, IndexError, json.JSONDecodeError) as error:
+                    raise RuntimeError("invalid persisted detection polygon") from error
+            detections.append(
+                Detection(
+                    BoundingBox(
+                        float(detection["x1"]),
+                        float(detection["y1"]),
+                        float(detection["x2"]),
+                        float(detection["y2"]),
+                    ),
+                    float(detection["confidence"]),
+                    int(detection["source_tile"])
+                    if detection["source_tile"] is not None
+                    else None,
+                    polygon,
+                )
             )
-            for detection in detection_rows
-        )
         return StoredJob(
             id=identifier,
             source=Path(str(row["source"])),
@@ -332,7 +361,7 @@ class JobStore:
                 RiskReason(value) for value in json.loads(str(row["risks_json"]))
             ),
             error=str(row["error"]) if row["error"] else None,
-            detections=detections,
+            detections=tuple(detections),
             elapsed_seconds=(
                 float(row["elapsed_seconds"])
                 if row["elapsed_seconds"] is not None

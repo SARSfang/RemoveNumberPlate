@@ -2,14 +2,15 @@ import sqlite3
 from pathlib import Path
 
 from app.core.job_store import JobStore, prepare_job_database
-from app.domain.detection import BoundingBox, Detection
+from app.domain.detection import Detection, Quadrilateral
 from app.domain.job import JobStatus, RiskReason
 from app.domain.result import ProcessingResult
 
 
 def test_job_store_records_result_and_counts(tmp_path: Path) -> None:
     source = tmp_path / "source.jpg"
-    detection = Detection(BoundingBox(10, 20, 100, 50), 0.55)
+    polygon = Quadrilateral(((10, 20), (100, 18), (98, 50), (12, 52)))
+    detection = Detection(polygon.bounding_box, 0.55, polygon=polygon)
     with JobStore(tmp_path / "jobs.sqlite3") as store:
         identifier = store.create_job(source)
         store.set_status(identifier, JobStatus.DETECTING)
@@ -80,8 +81,73 @@ def test_job_store_migrates_v1_database_without_losing_jobs(tmp_path: Path) -> N
         ).fetchall()
     }
     connection.close()
-    assert version == (3,)
+    assert version == (4,)
     assert {"jobs", "detections", "mask_revisions"} <= tables
+
+
+def test_job_store_migrates_v3_detection_to_polygon_fallback(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "jobs.sqlite3"
+    connection = sqlite3.connect(database)
+    connection.executescript(
+        """
+        CREATE TABLE schema_info(version INTEGER NOT NULL);
+        INSERT INTO schema_info(version) VALUES (3);
+        CREATE TABLE jobs (
+            id TEXT PRIMARY KEY,
+            source TEXT NOT NULL,
+            output TEXT,
+            status TEXT NOT NULL,
+            risks_json TEXT NOT NULL DEFAULT '[]',
+            error TEXT,
+            elapsed_seconds REAL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE detections (
+            job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+            ordinal INTEGER NOT NULL,
+            x1 REAL NOT NULL,
+            y1 REAL NOT NULL,
+            x2 REAL NOT NULL,
+            y2 REAL NOT NULL,
+            confidence REAL NOT NULL,
+            source_tile INTEGER,
+            PRIMARY KEY(job_id, ordinal)
+        );
+        CREATE TABLE mask_revisions (
+            id TEXT PRIMARY KEY,
+            job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+            commands_json TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        INSERT INTO jobs(
+            id, source, status, created_at, updated_at
+        ) VALUES ('job-1', 'source.jpg', 'completed', 'now', 'now');
+        INSERT INTO detections(
+            job_id, ordinal, x1, y1, x2, y2, confidence
+        ) VALUES ('job-1', 0, 10, 20, 100, 50, 0.9);
+        """
+    )
+    connection.commit()
+    connection.close()
+
+    with JobStore(database) as store:
+        job = store.get_job("job-1")
+        store.verify_integrity()
+
+    assert job.detections[0].polygon is None
+    assert job.detections[0].effective_polygon == Quadrilateral(
+        ((10, 20), (100, 20), (100, 50), (10, 50))
+    )
+    connection = sqlite3.connect(database)
+    assert connection.execute("SELECT version FROM schema_info").fetchone() == (4,)
+    columns = {
+        row[1] for row in connection.execute("PRAGMA table_info(detections)")
+    }
+    connection.close()
+    assert "polygon_json" in columns
 
 
 def test_prepare_job_database_quarantines_confirmed_corruption(
