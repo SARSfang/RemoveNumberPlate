@@ -31,7 +31,7 @@
         throw new Error("无法读取本地运行环境");
       }
       return {
-        version: "v0.2.0-rc.5 · 视觉预览",
+        version: "v0.2.0-rc.6 · 视觉预览",
         gpu: "NVIDIA GeForce RTX 4070",
         runtime: "轻量 ONNX Runtime · 本地离线处理",
         models_ready: startupMode !== "models",
