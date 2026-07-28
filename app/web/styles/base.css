@@ -264,3 +264,42 @@ main {
     transition-duration: .01ms !important;
   }
 }
+
+@media (max-width: 800px) {
+  html,
+  body {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .app-shell {
+    min-height: 0;
+  }
+
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .brand {
+    width: 166px;
+  }
+
+  .brand strong {
+    font-size: var(--font-md);
+  }
+
+  .local-chip,
+  .app-meta {
+    display: none;
+  }
+
+  .navigation {
+    flex: 1;
+  }
+
+  .nav-item {
+    min-width: 0;
+    flex: 1;
+    padding: 0 8px;
+  }
+}

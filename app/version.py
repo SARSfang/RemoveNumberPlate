@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-__version__ = "0.2.0-rc.4"
-__display_version__ = "v0.2.0 RC4"
-__windows_version__ = (0, 2, 0, 4)
+__version__ = "0.2.0-rc.5"
+__display_version__ = "v0.2.0-rc.5"
+__windows_version__ = (0, 2, 0, 5)

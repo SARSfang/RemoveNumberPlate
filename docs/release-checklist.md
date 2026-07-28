@@ -2,6 +2,16 @@
 
 Updated: 2026-07-28
 
+## RC5 本地发布证据
+
+- 版本：`v0.2.0-rc.5`
+- 本地安装包：`消除车牌-Setup-v0.2.0-rc.5-win64.exe`
+- SHA-256：`f59707127a5e3e91fca9764d000198b0e4d86f1254636aa897111c854180150d`
+- 发布脚本测试、模型校验、桌面冒烟和安装器验收通过。
+- 设计同屏对照、1040×680、200% 缩放、100/500 张胶片带窗口化通过。
+- 详细证据：`docs/release-evidence-v0.2.0-rc.5.md` 与根目录 `design-qa.md`。
+- 固定 10 张私有摄影样片的 RC4/RC5 同机性能对比尚待摄影师样片补齐。
+
 ## RC4 本地发布证据
 
 - GitHub Actions 干净构建：[30321333850](https://github.com/SARSfang/RemoveNumberPlate/actions/runs/30321333850)

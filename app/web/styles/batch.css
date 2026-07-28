@@ -573,3 +573,68 @@
     font-size: 0;
   }
 }
+
+@media (max-width: 800px) {
+  .batch-workspace {
+    grid-template-rows: 72px minmax(0, 1fr) 122px 30px;
+  }
+
+  .batch-commandbar {
+    grid-template-columns: minmax(180px, 1fr) auto;
+    gap: 12px;
+    padding: 10px 14px;
+  }
+
+  .batch-identity {
+    display: none;
+  }
+
+  .command-progress-copy {
+    margin-bottom: 5px;
+  }
+
+  .command-actions {
+    gap: 6px;
+  }
+
+  .command-actions .button {
+    height: 36px;
+    padding: 0 9px;
+  }
+
+  #add-files-button,
+  #review-queue-button {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  .batch-content {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .preview-card {
+    grid-template-rows: 44px minmax(0, 1fr);
+  }
+
+  .filmstrip-shell {
+    margin: 0 12px;
+    padding: 8px 6px;
+  }
+
+  .filmstrip-item {
+    width: 112px;
+  }
+
+  .batch-footer {
+    padding: 0 14px;
+    font-size: var(--font-xs);
+  }
+
+  .batch-footer span:last-child {
+    display: none;
+  }
+}
