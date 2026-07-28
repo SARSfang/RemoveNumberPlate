@@ -6,6 +6,7 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
+from typing import Any, cast
 
 from app.config import AppPaths
 from app.version import __version__
@@ -38,7 +39,8 @@ def main() -> int:
 
     paths = AppPaths.default()
     model_report = build_report(paths.model_manifest, paths.models_dir)
-    enabled_models = [item for item in model_report["models"] if item["enabled"]]
+    models = cast(list[dict[str, Any]], model_report["models"])
+    enabled_models = [item for item in models if item["enabled"]]
     require(
         bool(enabled_models) and all(item["verified"] for item in enabled_models),
         "model verification failed",
@@ -57,7 +59,7 @@ def main() -> int:
                 "desktop_smoke": "passed",
                 "installer_bytes": installer.stat().st_size,
                 "installer_sha256": digest,
-                "models": model_report["models"],
+                "models": models,
             },
             ensure_ascii=False,
             indent=2,

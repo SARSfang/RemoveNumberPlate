@@ -6,7 +6,9 @@ import importlib.metadata as metadata
 import json
 import re
 import shutil
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = PROJECT_ROOT / "packaging" / "third_party_licenses"
@@ -44,7 +46,7 @@ def main() -> int:
             ]
             if not candidates:
                 continue
-            source = Path(distribution.locate_file(candidates[0]))
+            source = Path(str(distribution.locate_file(candidates[0])))
             if not source.is_file():
                 continue
             destination_name = (
@@ -60,7 +62,7 @@ def main() -> int:
                 if Path(str(file)).name.lower().startswith(("license", "copying"))
             ]
             for ordinal, file in enumerate(fallback_files, start=1):
-                source = Path(distribution.locate_file(file))
+                source = Path(str(distribution.locate_file(file)))
                 if not source.is_file():
                     continue
                 destination_name = (
@@ -69,14 +71,15 @@ def main() -> int:
                 )
                 shutil.copyfile(source, OUTPUT_DIR / destination_name)
                 copied.append(destination_name)
+        metadata_values = cast(Mapping[str, str], distribution.metadata)
         entries.append(
             {
                 "name": package_name,
                 "version": distribution.version,
-                "license_expression": distribution.metadata.get("License-Expression"),
-                "license": distribution.metadata.get("License"),
+                "license_expression": metadata_values.get("License-Expression"),
+                "license": metadata_values.get("License"),
                 "license_files": copied,
-                "homepage": distribution.metadata.get("Project-URL"),
+                "homepage": metadata_values.get("Project-URL"),
             }
         )
     (OUTPUT_DIR / "manifest.json").write_text(

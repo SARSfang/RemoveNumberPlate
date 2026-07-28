@@ -38,6 +38,11 @@ EventSink = Callable[[str, dict[str, object]], None]
 ProcessorFactory = Callable[[], Processor]
 ManualProcessorFactory = Callable[[], ManualMaskProcessor]
 LOGGER = logging.getLogger("remove_number_plate.desktop")
+SUPPORT_DOCUMENTS = {
+    "user-guide": "user-guide.md",
+    "troubleshooting": "troubleshooting.md",
+    "privacy": "privacy.md",
+}
 
 
 def frontend_directory() -> Path:
@@ -402,6 +407,16 @@ class DesktopApi:
             "message": "诊断包已导出；其中不包含照片、文件路径或任务数据库。",
             "path": str(destination),
         }
+
+    def open_support_document(self, document: str) -> bool:
+        filename = SUPPORT_DOCUMENTS.get(document)
+        if filename is None:
+            return False
+        target = self._paths.project_root / "docs" / filename
+        if not target.is_file():
+            return False
+        os.startfile(target)
+        return True
 
     def _history_counts(self) -> dict[str, int]:
         with JobStore(self._job_database) as store:

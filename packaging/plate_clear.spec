@@ -16,6 +16,10 @@ datas = [
     (str(project_root / "README.md"), "."),
     (str(project_root / "THIRD_PARTY_NOTICES.md"), "."),
     (str(project_root / "RELEASE.md"), "."),
+    (str(project_root / "docs" / "user-guide.md"), "docs"),
+    (str(project_root / "docs" / "troubleshooting.md"), "docs"),
+    (str(project_root / "docs" / "privacy.md"), "docs"),
+    (str(project_root / "docs" / "release-checklist.md"), "docs"),
     (str(project_root / "packaging" / "third_party_licenses"), "third_party_licenses"),
 ]
 datas.extend((str(project_root / "models" / name), "models") for name in model_files)

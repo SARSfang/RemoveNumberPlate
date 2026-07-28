@@ -35,6 +35,15 @@
       "format": "onnx-opset14",
       "software_license": "Apache-2.0",
       "weights_terms": "Locally converted without retraining from the official PaddleX inference model using Paddle2ONNX 2.1.0",
+      "build": {
+        "kind": "paddle2onnx",
+        "source_model_id": "pp_yoloe_s_vehicle",
+        "model_filename": "inference.json",
+        "params_filename": "inference.pdiparams",
+        "paddle_version": "3.0.0",
+        "paddle2onnx_version": "2.1.0",
+        "opset_version": 14
+      },
       "enabled": true
     },
     {
@@ -47,6 +56,15 @@
       "format": "onnx-opset14",
       "software_license": "Apache-2.0",
       "weights_terms": "Locally converted without retraining from the official PaddleDetection inference model using Paddle2ONNX 2.1.0",
+      "build": {
+        "kind": "paddle2onnx",
+        "source_model_id": "pp_vehicle_plate_detector",
+        "model_filename": "inference.pdmodel",
+        "params_filename": "inference.pdiparams",
+        "paddle_version": "3.0.0",
+        "paddle2onnx_version": "2.1.0",
+        "opset_version": 14
+      },
       "enabled": true
     },
     {
@@ -71,6 +89,9 @@
       "format": "onnx",
       "software_license": "Apache-2.0",
       "weights_terms": "Published by the Open Source Vision Foundation OpenCV account with all repository files declared Apache-2.0",
+      "build": {
+        "kind": "download"
+      },
       "enabled": true
     }
   ]

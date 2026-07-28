@@ -61,10 +61,12 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     assert "http://" not in markup
     assert 'aria-label="拖放照片或文件夹"' in markup
     assert "Content-Security-Policy" in markup
+    assert "connect-src 'none'" in markup
     assert 'data-tool="rectangle"' in markup
     assert 'data-tool="brush_add"' in markup
     assert 'data-tool="brush_erase"' in markup
     assert "确认并重修" in markup
+    assert 'data-document="privacy"' in markup
     stylesheet = (frontend / "styles.css").read_text(encoding="utf-8")
     assert "[hidden] { display: none !important; }" in stylesheet
 

@@ -1,5 +1,6 @@
 #define MyAppName "消除车牌"
-#define MyAppVersion "0.2.0-rc.1"
+#define MyAppVersion "0.2.0-rc.2"
+#define MyNumericVersion "0.2.0.2"
 #define MyAppPublisher "SARSfang"
 #define MyAppExeName "消除车牌.exe"
 
@@ -12,6 +13,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
+UsePreviousAppDir=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -22,14 +24,19 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-VersionInfoVersion=0.2.0.1
+VersionInfoVersion={#MyNumericVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} 安装程序
 VersionInfoProductName={#MyAppName}
-VersionInfoProductVersion=0.2.0.1
+VersionInfoProductVersion={#MyNumericVersion}
 MinVersion=10.0.17763
 CloseApplications=force
 RestartApplications=no
+AppMutex=RemoveNumberPlate-FEF18DF0-60F9-4097-8F51-1EEE085A7051
+SetupMutex=RemoveNumberPlate-Setup-FEF18DF0-60F9-4097-8F51-1EEE085A7051
+
+[Languages]
+Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "快捷方式："; Flags: unchecked
@@ -50,6 +57,77 @@ Filename: "{app}\{#MyAppExeName}"; Description: "启动 {#MyAppName}"; Flags: no
 [Code]
 const
   WebView2ClientId = '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+  CurrentNumericVersion = '{#MyNumericVersion}';
+  UninstallKey =
+    'Software\Microsoft\Windows\CurrentVersion\Uninstall\' +
+    '{FEF18DF0-60F9-4097-8F51-1EEE085A7051}_is1';
+
+function NextVersionPart(var Version: String): Integer;
+var
+  Separator: Integer;
+  Value: String;
+begin
+  Separator := Pos('.', Version);
+  if Separator = 0 then
+  begin
+    Value := Version;
+    Version := '';
+  end
+  else
+  begin
+    Value := Copy(Version, 1, Separator - 1);
+    Delete(Version, 1, Separator);
+  end;
+  Result := StrToIntDef(Value, 0);
+end;
+
+function CompareNumericVersions(LeftVersion, RightVersion: String): Integer;
+var
+  Index: Integer;
+  LeftPart: Integer;
+  RightPart: Integer;
+begin
+  Result := 0;
+  for Index := 1 to 4 do
+  begin
+    LeftPart := NextVersionPart(LeftVersion);
+    RightPart := NextVersionPart(RightVersion);
+    if LeftPart < RightPart then
+    begin
+      Result := -1;
+      Exit;
+    end;
+    if LeftPart > RightPart then
+    begin
+      Result := 1;
+      Exit;
+    end;
+  end;
+end;
+
+function InitializeSetup: Boolean;
+var
+  InstallLocation: String;
+  InstalledVersion: String;
+begin
+  Result := True;
+  if
+    RegQueryStringValue(HKCU, UninstallKey, 'InstallLocation', InstallLocation) and
+    GetVersionNumbersString(
+      AddBackslash(InstallLocation) + '{#MyAppExeName}',
+      InstalledVersion
+    ) and
+    (CompareNumericVersions(InstalledVersion, CurrentNumericVersion) > 0)
+  then
+  begin
+    MsgBox(
+      '电脑上已经安装了更新版本。为保护任务数据，本安装程序不会执行降级。',
+      mbError,
+      MB_OK
+    );
+    Result := False;
+  end;
+end;
 
 function HasValidWebViewVersion(RootKey: Integer; KeyPath: String): Boolean;
 var

@@ -573,6 +573,10 @@
     const response = await window.pywebview.api.export_diagnostics();
     if (response.message) showToast(response.message);
   });
+  $$(".support-document").forEach((button) => button.addEventListener("click", async () => {
+    const opened = await window.pywebview.api.open_support_document(button.dataset.document);
+    if (!opened) showToast("帮助文档缺失，请重新安装应用。");
+  }));
 
   $$(".tool-button[data-tool]").forEach((button) => button.addEventListener("click", () => {
     state.tool = button.dataset.tool;

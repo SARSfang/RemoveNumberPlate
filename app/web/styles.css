@@ -178,6 +178,7 @@ tbody tr:hover:not(.empty-row) { background: rgba(29, 42, 61, .65); }
 .setting-row label, .setting-label { font-size: 15px; font-weight: 650; }
 .setting-row p { margin: 3px 0 0; color: var(--secondary); font-size: 12px; }
 .setting-row strong { max-width: 46%; text-align: right; }
+.setting-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
 select { min-width: 190px; min-height: 40px; padding: 0 12px; border: 1px solid #34445e; border-radius: 8px; background: var(--surface-raised); color: var(--text); }
 
 .toast { position: fixed; right: 24px; bottom: 24px; max-width: 420px; padding: 12px 16px; border: 1px solid #405574; border-radius: 10px; background: #182334; box-shadow: 0 12px 40px rgba(0, 0, 0, .38); z-index: 50; }

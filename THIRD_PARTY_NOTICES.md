@@ -21,6 +21,13 @@ collected license file.
   <https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution>
 - The bundled executable must retain a valid Microsoft Authenticode signature.
 
+## Inno Setup
+
+Inno Setup 7.0.2 is used as a build tool and is not included as an application
+runtime component. The resulting installer uses its official Simplified Chinese
+translation. Commercial distribution requires an applicable Inno Setup
+commercial license; this remains an external release gate.
+
 ## PaddleX PP-YOLOE-S vehicle detector
 
 - Project: <https://github.com/PaddlePaddle/PaddleX>

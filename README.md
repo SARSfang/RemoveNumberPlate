@@ -31,6 +31,12 @@ python -m venv .venv
 ```
 
 模型不提交到普通 Git 历史；版本、来源与 SHA-256 固定在 `models/manifest.json`。
+发布模型可以在隔离的 Paddle 3.0/Paddle2ONNX 2.1 环境中从官方源归档重建：
+
+```powershell
+python -m scripts.build_models
+python -m scripts.verify_models
+```
 
 ## 开发者批处理命令
 
@@ -48,6 +54,17 @@ python -m app.cli report
 
 脚本会校验模型、运行测试、构建免安装目录与正式安装程序，并执行桌面启动验收。
 最终文件位于 `dist\installer`，同目录包含 SHA-256 校验值。
+
+带 `v*` tag 的 GitHub 发布必须配置代码签名证书；缺少签名 secrets 时流水线会拒绝
+发布。手动运行 workflow 可以生成明确标记的未签名内部预览。
+
+## 用户文档
+
+- [用户指南](docs/user-guide.md)
+- [故障排除](docs/troubleshooting.md)
+- [隐私说明](docs/privacy.md)
+- [发布检查清单](docs/release-checklist.md)
+- [候选版发布说明](RELEASE.md)
 
 ## 故障诊断
 

@@ -60,6 +60,9 @@ def install_exception_hooks(log_path: Path) -> None:
         )
 
     def handle_thread_exception(arguments: threading.ExceptHookArgs) -> None:
+        if arguments.exc_value is None:
+            logger.error("Worker thread exited without an exception value")
+            return
         logger.error(
             "Unhandled worker exception",
             exc_info=(arguments.exc_type, arguments.exc_value, arguments.exc_traceback),

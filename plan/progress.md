@@ -8,9 +8,9 @@ Updated: 2026-07-28
 - GPU: NVIDIA GeForce RTX 4060 Ti, 8188 MiB
 - NVIDIA driver: 610.74
 - Miniconda: 26.5.3
-- Project environment: `plate-remover`
-- Python: 3.11.15
-- Environment source: conda-forge
+- Project environment: `.venv`
+- Python: 3.11.9
+- Environment source: python.org CPython
 
 The system Python 3.14.2 is intentionally not used because GPU inference
 packages may not provide compatible wheels.
@@ -22,9 +22,10 @@ packages may not provide compatible wheels.
   acceptance remains pending
 - M2 headless pipeline: complete
 - M3 lightweight batch desktop UI: complete
-- M4 exception review editor: in progress; implementation complete, user
-  acceptance on private photos remains pending
-- M5 Windows release candidate: pending
+- M4 exception review editor: implementation complete; user acceptance on
+  private photos remains pending
+- M5 Windows release candidate: RC2 engineering complete; external commercial
+  release gates remain
 
 ## Current decisions
 
@@ -158,3 +159,28 @@ packages may not provide compatible wheels.
   completed a real public sample end to end.
 - The final ZIP was extracted into a clean directory and the extracted
   executable passed the same startup check.
+
+## RC2 release engineering
+
+- Application, package, Windows resource and installer versions are synchronized
+  at `0.2.0-rc.2` by an automated test.
+- Every enabled model can be rebuilt from its pinned official source. The two
+  Paddle archives reproduce the checked-in-local ONNX hashes under Paddle 3.0.0,
+  Paddle2ONNX 2.1.0 and opset 14; LaMa is downloaded and verified directly.
+- Inno Setup 7.0.2 produces a Simplified Chinese per-user installer with
+  WebView2 bootstrap, stable AppId, upgrade reuse, version metadata and future
+  downgrade protection.
+- RC1-to-RC2 in-place upgrade, installed desktop smoke, license/document
+  presence, uninstall cleanup and user-data preservation pass.
+- A frozen real-image acceptance passes at a 291-character path containing
+  Chinese characters and spaces; the source SHA-256 remains unchanged.
+- Runtime source contains no network-client imports and the frontend CSP blocks
+  connections with `connect-src 'none'`.
+- GitHub Actions can rebuild models and the Windows installer. Tagged releases
+  require a PFX certificate, sign both EXE and installer, verify Authenticode,
+  and only then create the GitHub Release.
+- User guide, troubleshooting, privacy notice, release checklist, rotating logs
+  and privacy-safe diagnostics are included.
+- Remaining external gates: private-photo quality sign-off, legal review of
+  Paddle weight redistribution, a Windows code-signing certificate, and an
+  applicable Inno Setup commercial license.
