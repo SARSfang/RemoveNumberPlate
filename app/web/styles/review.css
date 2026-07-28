@@ -1,0 +1,197 @@
+.review-workspace {
+  height: calc(100vh - var(--topbar-height) - 128px);
+  min-height: 520px;
+  max-width: 1440px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--panel-radius);
+  background: var(--surface);
+}
+
+.review-sidebar {
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--canvas-subtle);
+}
+
+.review-sidebar-heading {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+.review-sidebar-heading strong {
+  color: var(--warning);
+}
+
+.review-list {
+  height: calc(100% - 50px);
+  overflow: auto;
+  padding: 8px;
+}
+
+.review-item {
+  width: 100%;
+  display: block;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-2);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.review-item:hover {
+  background: var(--surface-raised);
+}
+
+.review-item.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.review-item strong,
+.review-item span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-item span {
+  margin-top: 4px;
+  color: var(--text-quiet);
+  font-size: var(--font-xs);
+}
+
+.editor-panel {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 54px minmax(0, 1fr) 64px;
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tool-group {
+  display: flex;
+  gap: 4px;
+}
+
+.tool-button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-1);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-sm);
+}
+
+.tool-button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.tool-button.is-active {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+}
+
+.tool-button:disabled {
+  opacity: .35;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-subtle);
+}
+
+.brush-control,
+.mask-opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+.brush-control input {
+  width: 90px;
+}
+
+.mask-opacity-control {
+  margin-left: auto;
+}
+
+.mask-opacity-control input {
+  width: 76px;
+}
+
+.canvas-stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ink-950);
+}
+
+#review-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.canvas-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--canvas-overlay);
+  color: var(--text-muted);
+}
+
+.editor-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.editor-file {
+  min-width: 0;
+  flex: 1;
+}
+
+.editor-file strong,
+.editor-file span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-file span {
+  color: var(--text-quiet);
+  font-size: var(--font-xs);
+}

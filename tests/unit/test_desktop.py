@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import threading
 import time
 from pathlib import Path
@@ -61,7 +62,6 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     frontend = frontend_directory()
 
     assert (frontend / "index.html").is_file()
-    assert (frontend / "styles.css").is_file()
     assert (frontend / "app.js").is_file()
     markup = (frontend / "index.html").read_text(encoding="utf-8")
     assert "https://" not in markup
@@ -74,11 +74,23 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     assert 'data-tool="brush_erase"' in markup
     assert "确认并重修" in markup
     assert 'data-document="privacy"' in markup
-    stylesheet = (frontend / "styles.css").read_text(encoding="utf-8")
+    assert 'role="tablist"' in markup
+    assert 'role="listbox"' in markup
+    assert 'aria-modal="true"' in markup
+    local_assets = [
+        value
+        for value in re.findall(r'(?:href|src)="([^"]+)"', markup)
+        if not value.startswith("#")
+    ]
+    assert local_assets
+    assert all(not value.startswith(("http:", "https:")) for value in local_assets)
+    assert all((frontend / value).is_file() for value in local_assets)
+    stylesheet = (frontend / "styles" / "base.css").read_text(encoding="utf-8")
     script = (frontend / "app.js").read_text(encoding="utf-8")
-    assert "[hidden] { display: none !important; }" in stylesheet
+    assert "[hidden]" in stylesheet
     assert "database_recovered" in script
     assert "settings_recovered" in script
+    assert "window.app = { receiveBackendEvent }" in script
 
 
 def test_batch_service_processes_all_images_and_persists_results(tmp_path: Path) -> None:

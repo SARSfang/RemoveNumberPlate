@@ -28,6 +28,15 @@ runtime component. The resulting installer uses its official Simplified Chinese
 translation. Commercial distribution requires an applicable Inno Setup
 commercial license; this remains an external release gate.
 
+## Lucide icons
+
+- Project: <https://lucide.dev>
+- Usage: a local, release-bundled subset of interface icons under
+  `app/web/assets/icons/`
+- License: ISC
+- Copyright: Lucide Contributors
+- Runtime network access: none
+
 ## PaddleX PP-YOLOE-S vehicle detector
 
 - Project: <https://github.com/PaddlePaddle/PaddleX>

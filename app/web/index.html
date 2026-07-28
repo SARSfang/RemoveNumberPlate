@@ -6,14 +6,21 @@
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self'; img-src 'self' data: file:; connect-src 'none'; object-src 'none'; frame-src 'none'">
   <title>消除车牌</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/batch.css">
+  <link rel="stylesheet" href="styles/review.css">
+  <link rel="stylesheet" href="styles/history-settings.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
   <div class="app-shell">
     <header class="topbar">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span>消除车牌</span>
+      <div class="brand" aria-label="消除车牌">
+        <img class="brand-icon" src="assets/icons/scan-line.svg" alt="">
+        <strong>消除车牌</strong>
+        <span class="local-chip">AI 本地版</span>
       </div>
       <nav class="navigation" aria-label="主要工作区">
         <button class="nav-item is-active" data-page="batch" type="button">批处理</button>
@@ -23,79 +30,194 @@
         <button class="nav-item" data-page="history" type="button">任务历史</button>
         <button class="nav-item" data-page="settings" type="button">设置</button>
       </nav>
-      <div id="app-version" class="version">正在启动…</div>
+      <div class="app-meta">
+        <span class="offline-state"><span class="status-dot"></span>本地离线</span>
+        <span class="meta-divider" aria-hidden="true"></span>
+        <span id="app-version">正在启动…</span>
+      </div>
     </header>
 
-    <main>
-      <section id="page-batch" class="page is-active" aria-labelledby="batch-title">
-        <div class="page-heading">
-          <div>
-            <p class="eyebrow">AI BATCH WORKSPACE</p>
-            <h1 id="batch-title">批处理</h1>
-            <p class="page-subtitle">拖入成片，自动检测、修复并安全输出。</p>
-          </div>
-          <div class="trust-badge"><span class="status-dot"></span>完全离线</div>
-        </div>
+    <main id="main-content">
+      <section id="page-batch" class="page page-batch is-active" aria-labelledby="batch-title">
+        <h1 id="batch-title" class="sr-only" tabindex="-1">批处理</h1>
 
-        <section id="drop-zone" class="drop-zone" aria-label="拖放照片或文件夹">
-          <div class="drop-symbol" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </div>
-          <h2>拖入照片或文件夹</h2>
-          <p>支持 JPEG、PNG、TIFF，可递归扫描文件夹</p>
-          <div class="drop-actions">
-            <button id="choose-files" class="button button-primary" type="button">选择照片</button>
-            <button id="choose-folder" class="button" type="button">选择文件夹</button>
+        <section id="batch-empty" class="batch-empty">
+          <div id="drop-zone" class="drop-zone" aria-label="拖放照片或文件夹">
+            <div class="drop-icon-shell" aria-hidden="true">
+              <img src="assets/icons/images.svg" alt="">
+            </div>
+            <p class="eyebrow">PREVIEW-FIRST WORKSPACE</p>
+            <h2>把整组照片拖到这里</h2>
+            <p class="empty-lead">自动检测并消除车牌，原片永不覆盖。</p>
+            <div class="drop-actions">
+              <button id="choose-files" class="button button-primary" type="button">
+                <img src="assets/icons/image-plus.svg" alt="">选择照片
+              </button>
+              <button id="choose-folder" class="button button-secondary" type="button">
+                <img src="assets/icons/folder-open.svg" alt="">选择文件夹
+              </button>
+            </div>
+            <div class="format-line">
+              <span>JPEG</span><span>PNG</span><span>TIFF</span>
+              <i aria-hidden="true"></i>
+              <span>完全离线</span>
+            </div>
           </div>
         </section>
 
-        <div class="stats" aria-label="批处理统计">
-          <article class="stat-card"><strong id="stat-total">0</strong><span>总计</span></article>
-          <article class="stat-card"><strong id="stat-completed">0</strong><span>已完成</span></article>
-          <article class="stat-card stat-review"><strong id="stat-review">0</strong><span>待复核</span></article>
-          <article class="stat-card stat-processing"><strong id="stat-processing">0</strong><span>处理中</span></article>
-          <article class="stat-card stat-failed"><strong id="stat-failed">0</strong><span>失败</span></article>
-        </div>
-
-        <section class="work-panel" aria-labelledby="progress-title">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">当前任务</p>
-              <h2 id="progress-title">等待添加照片</h2>
+        <section id="batch-workspace" class="batch-workspace" hidden>
+          <header class="batch-commandbar">
+            <div class="batch-identity">
+              <p id="batch-name">本次处理</p>
+              <span id="batch-summary">0 张照片</span>
             </div>
-            <span id="progress-count" class="progress-count">0 / 0</span>
+            <div class="command-progress">
+              <div class="command-progress-copy">
+                <span id="progress-title">正在准备</span>
+                <strong id="progress-count">0 / 0</strong>
+                <span id="progress-percent">0%</span>
+              </div>
+              <div class="progress-track" role="progressbar" aria-label="总进度"
+                   aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div id="progress-fill" class="progress-fill"></div>
+              </div>
+            </div>
+            <div class="command-actions">
+              <button id="pause-button" class="button button-secondary" type="button">
+                <img src="assets/icons/pause.svg" alt="">暂停
+              </button>
+              <button id="cancel-button" class="button button-secondary" type="button">
+                <img src="assets/icons/circle-x.svg" alt="">取消剩余
+              </button>
+              <button id="add-files-button" class="button button-secondary" type="button" disabled>
+                <img src="assets/icons/plus.svg" alt="">添加照片
+              </button>
+              <button id="review-button" class="button button-primary" type="button" disabled>
+                进入待复核 <span id="review-button-count">(0)</span>
+              </button>
+            </div>
+          </header>
+
+          <div class="batch-content">
+            <section class="preview-card" aria-labelledby="preview-file-name">
+              <div class="preview-header">
+                <div class="preview-tabs" role="tablist" aria-label="预览版本">
+                  <button id="preview-tab-original" class="preview-tab" type="button" role="tab"
+                          aria-selected="false" aria-controls="preview-viewport" data-variant="original">原图</button>
+                  <button id="preview-tab-result" class="preview-tab is-active" type="button" role="tab"
+                          aria-selected="true" aria-controls="preview-viewport" data-variant="result">处理结果</button>
+                </div>
+                <div class="follow-controls" aria-label="预览跟随模式">
+                  <span id="follow-state" class="mode-chip is-following">
+                    <span class="status-dot"></span>自动跟随
+                  </span>
+                  <span id="processing-position" class="quiet-copy">等待任务</span>
+                  <button id="restore-follow-button" class="button button-compact" type="button" hidden>
+                    恢复跟随
+                  </button>
+                  <button id="details-toggle" class="button button-compact" type="button"
+                          aria-expanded="false" aria-controls="job-inspector">详情</button>
+                </div>
+              </div>
+              <div id="preview-viewport" class="preview-viewport" tabindex="0"
+                   aria-label="当前照片预览">
+                <div id="preview-skeleton" class="preview-skeleton" hidden></div>
+                <img id="preview-image" alt="" draggable="false" hidden>
+                <div id="preview-placeholder" class="preview-placeholder">
+                  <img src="assets/icons/image.svg" alt="">
+                  <strong>正在准备预览</strong>
+                  <span>AI 处理会继续在后台运行</span>
+                </div>
+                <div id="preview-error" class="preview-error" hidden>
+                  <strong>预览暂不可用</strong>
+                  <span id="preview-error-message">照片处理不会受到影响。</span>
+                  <button id="preview-retry-button" class="button button-secondary" type="button">重试</button>
+                </div>
+                <div class="preview-toolbar" aria-label="预览缩放工具">
+                  <button id="preview-zoom-out" class="icon-button" type="button" aria-label="缩小" title="缩小">
+                    <img src="assets/icons/zoom-out.svg" alt="">
+                  </button>
+                  <button id="preview-fit" class="zoom-value" type="button" aria-label="适应窗口">适应</button>
+                  <button id="preview-zoom-in" class="icon-button" type="button" aria-label="放大" title="放大">
+                    <img src="assets/icons/zoom-in.svg" alt="">
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <aside id="job-inspector" class="job-inspector" aria-labelledby="inspector-title">
+              <button id="details-close-button" class="icon-button details-close" type="button"
+                      aria-label="关闭详情" title="关闭详情">
+                <img src="assets/icons/circle-x.svg" alt="">
+              </button>
+              <div class="inspector-head">
+                <div id="inspector-thumbnail" class="inspector-thumbnail" aria-hidden="true"></div>
+                <div>
+                  <h2 id="preview-file-name">—</h2>
+                  <span id="inspector-status" class="status status-queued">排队中</span>
+                </div>
+              </div>
+              <section class="inspector-section">
+                <p class="section-label" id="inspector-title">处理状态</p>
+                <div class="status-line">
+                  <span id="inspector-status-icon" class="status-dot"></span>
+                  <strong id="inspector-status-copy">等待处理</strong>
+                </div>
+              </section>
+              <section class="inspector-section">
+                <p class="section-label">输出</p>
+                <p id="inspector-output-name" class="output-name">结果尚未生成</p>
+                <button id="open-job-output-button" class="button button-secondary button-full" type="button" disabled>
+                  <img src="assets/icons/folder-open.svg" alt="">打开输出文件夹
+                </button>
+              </section>
+              <section class="inspector-section inspector-facts">
+                <p class="section-label">文件信息</p>
+                <dl>
+                  <div><dt>分辨率</dt><dd id="inspector-dimensions">—</dd></div>
+                  <div><dt>处理耗时</dt><dd id="inspector-elapsed">—</dd></div>
+                  <div><dt>识别区域</dt><dd id="inspector-detections">—</dd></div>
+                  <div><dt>风险</dt><dd id="inspector-risks">—</dd></div>
+                </dl>
+              </section>
+              <div class="inspector-actions">
+                <button id="inspector-review-button" class="button button-secondary button-full" type="button" disabled>进入复核</button>
+                <button id="inspector-retry-button" class="button button-quiet button-full" type="button" disabled>重新处理</button>
+              </div>
+            </aside>
           </div>
-          <div class="progress-track" role="progressbar" aria-label="总进度"
-               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <div id="progress-fill" class="progress-fill"></div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>照片</th><th>状态</th><th>耗时</th><th>输出</th></tr></thead>
-              <tbody id="task-rows">
-                <tr class="empty-row"><td colspan="4">添加照片后，任务状态会实时显示在这里。</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="panel-actions">
-            <button id="pause-button" class="button" type="button" disabled>暂停</button>
-            <button id="cancel-button" class="button button-danger" type="button" disabled>取消剩余任务</button>
-            <span class="action-spacer"></span>
-            <button id="review-button" class="button" type="button" disabled>进入待复核</button>
-          </div>
+
+          <section class="filmstrip-shell" aria-label="批次照片">
+            <button id="filmstrip-previous" class="filmstrip-arrow" type="button" aria-label="向前浏览">
+              <img src="assets/icons/chevron-left.svg" alt="">
+            </button>
+            <div id="filmstrip" class="filmstrip" role="listbox" tabindex="0"
+                 aria-label="批次照片胶片带"></div>
+            <button id="filmstrip-next" class="filmstrip-arrow" type="button" aria-label="向后浏览">
+              <img src="assets/icons/chevron-right.svg" alt="">
+            </button>
+          </section>
+          <footer class="batch-footer">
+            <span><img src="assets/icons/folder.svg" alt="">结果保存到每组照片旁的“车牌已消除”文件夹</span>
+            <span id="batch-footer-status">原片永不覆盖</span>
+          </footer>
         </section>
       </section>
 
-      <section id="page-review" class="page" aria-labelledby="review-title">
-        <div class="page-heading">
-          <div><p class="eyebrow">EXCEPTION INBOX</p><h1 id="review-title">待复核</h1>
-            <p class="page-subtitle">集中处理低置信度、贴边和异常检测。</p></div>
-        </div>
+      <section id="page-review" class="page page-standard" aria-labelledby="review-title">
+        <header class="page-heading">
+          <div>
+            <p class="eyebrow">EXCEPTION INBOX</p>
+            <h1 id="review-title" tabindex="-1">待复核</h1>
+            <p>集中处理低置信度、贴边和异常检测。</p>
+          </div>
+          <span class="privacy-note">原图尚未修改</span>
+        </header>
         <div id="review-empty" class="empty-state">
-          <div class="empty-glyph" aria-hidden="true"></div>
+          <div class="empty-icon"><img src="assets/icons/shield-check.svg" alt=""></div>
           <h2>当前没有需要复核的照片</h2>
-          <p>发现风险时，照片会安全地留在这里，不会被自动修改。</p>
-          <button class="button" data-go-page="batch" type="button">返回批处理</button>
+          <p>发现风险时，照片会安全地留在这里。</p>
+          <button class="button button-secondary" data-go-page="batch" type="button">返回批处理</button>
         </div>
         <div id="review-workspace" class="review-workspace" hidden>
           <aside class="review-sidebar" aria-label="待复核照片">
@@ -106,121 +228,176 @@
           </aside>
           <section class="editor-panel" aria-label="人工掩码编辑器">
             <div class="editor-toolbar" role="toolbar" aria-label="掩码工具">
-              <button class="tool-button is-active" data-tool="rectangle" type="button" title="矩形框 (R)">矩形框</button>
-              <button class="tool-button" data-tool="brush_add" type="button" title="画笔 (B)">画笔</button>
-              <button class="tool-button" data-tool="brush_erase" type="button" title="橡皮擦 (E)">橡皮擦</button>
-              <button class="tool-button" data-tool="remove_detection" type="button" title="点击删除误检框">删除自动框</button>
+              <div class="tool-group" aria-label="标记工具">
+                <button class="tool-button is-active" data-tool="rectangle" type="button" title="矩形框 (R)">矩形框</button>
+                <button class="tool-button" data-tool="brush_add" type="button" title="画笔 (B)">画笔</button>
+                <button class="tool-button" data-tool="brush_erase" type="button" title="橡皮擦 (E)">橡皮擦</button>
+                <button class="tool-button" data-tool="remove_detection" type="button" title="点击删除误检框">删除自动框</button>
+              </div>
               <span class="toolbar-divider"></span>
-              <label class="brush-control" for="brush-size">笔刷 <span id="brush-size-value">36</span></label>
-              <input id="brush-size" type="range" min="8" max="160" value="36">
-              <span class="toolbar-divider"></span>
-              <button id="undo-button" class="tool-button" type="button" title="撤销 (Ctrl+Z)" disabled>撤销</button>
-              <button id="redo-button" class="tool-button" type="button" title="重做 (Ctrl+Y)" disabled>重做</button>
-              <button id="restore-button" class="tool-button" type="button">恢复自动框</button>
-              <span class="zoom-hint">滚轮缩放 · 拖动画布平移</span>
+              <div id="brush-control" class="brush-control" hidden>
+                <label for="brush-size">笔刷 <span id="brush-size-value">36</span></label>
+                <input id="brush-size" type="range" min="8" max="160" value="36">
+              </div>
+              <div class="tool-group" aria-label="历史">
+                <button id="undo-button" class="tool-button" type="button" title="撤销 (Ctrl+Z)" disabled>撤销</button>
+                <button id="redo-button" class="tool-button" type="button" title="重做 (Ctrl+Y)" disabled>重做</button>
+                <button id="restore-button" class="tool-button" type="button">恢复自动框</button>
+              </div>
+              <label class="mask-opacity-control" for="mask-opacity">遮罩
+                <input id="mask-opacity" type="range" min="15" max="70" value="36">
+              </label>
             </div>
             <div id="canvas-stage" class="canvas-stage">
               <canvas id="review-canvas" tabindex="0" aria-label="待复核照片与车牌掩码"></canvas>
               <div id="canvas-loading" class="canvas-loading">正在载入预览…</div>
             </div>
             <div class="editor-footer">
-              <div>
+              <div class="editor-file">
                 <strong id="review-file-name">—</strong>
                 <span id="review-risk-text">自动检测存在风险，原图尚未修改</span>
               </div>
-              <button id="previous-review-button" class="button" type="button">上一张</button>
-              <button id="next-review-button" class="button" type="button">下一张</button>
-              <button id="skip-review-button" class="button" type="button">跳过此图</button>
+              <button id="previous-review-button" class="button button-secondary" type="button">上一张</button>
+              <button id="next-review-button" class="button button-secondary" type="button">下一张</button>
+              <button id="skip-review-button" class="button button-quiet" type="button">跳过此图</button>
               <button id="confirm-review-button" class="button button-primary" type="button">确认并重修</button>
             </div>
           </section>
         </div>
       </section>
 
-      <section id="page-history" class="page" aria-labelledby="history-title">
-        <div class="page-heading">
-          <div><p class="eyebrow">LOCAL JOB HISTORY</p><h1 id="history-title">任务历史</h1>
-            <p class="page-subtitle">恢复未完成任务，快速找到最近输出。</p></div>
-        </div>
-        <div class="history-grid">
-          <article class="info-panel">
-            <p class="panel-kicker">本机任务记录</p>
-            <strong id="history-total">0</strong>
-            <span>只保存文件位置和处理状态，不保存车牌文字。</span>
-          </article>
-          <article class="info-panel">
-            <p class="panel-kicker">隐私</p>
-            <h2>没有云端同步</h2>
-            <span>照片像素、EXIF 和模型推理始终留在这台电脑。</span>
-          </article>
-        </div>
-        <section class="work-panel history-panel" aria-labelledby="history-list-title">
-          <div class="panel-header">
-            <div>
-              <p class="panel-kicker">最近任务</p>
-              <h2 id="history-list-title">处理记录</h2>
-            </div>
-            <button id="refresh-history-button" class="button" type="button">刷新</button>
+      <section id="page-history" class="page page-standard" aria-labelledby="history-title">
+        <header class="page-heading">
+          <div>
+            <p class="eyebrow">LOCAL JOB HISTORY</p>
+            <h1 id="history-title" tabindex="-1">任务历史</h1>
+            <p>查看最近 100 条本机记录，不保存车牌文字。</p>
           </div>
-          <div class="table-wrap history-table-wrap">
-            <table>
-              <thead><tr><th>照片</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead>
-              <tbody id="history-rows">
-                <tr class="empty-row"><td colspan="4">还没有本机任务记录。</td></tr>
-              </tbody>
-            </table>
+          <span class="privacy-note">没有云端同步</span>
+        </header>
+        <section class="history-workspace">
+          <div class="history-toolbar">
+            <div class="history-total"><strong id="history-total">0</strong><span>条任务</span></div>
+            <label class="search-field">
+              <img src="assets/icons/search.svg" alt="">
+              <span class="sr-only">搜索文件名</span>
+              <input id="history-search" type="search" placeholder="搜索文件名">
+            </label>
+            <label class="select-field">
+              <span class="sr-only">筛选任务状态</span>
+              <select id="history-filter">
+                <option value="all">全部状态</option>
+                <option value="completed">已完成</option>
+                <option value="review_required">待复核</option>
+                <option value="failed">失败</option>
+                <option value="cancelled">已取消</option>
+              </select>
+            </label>
+            <button id="refresh-history-button" class="button button-secondary" type="button">
+              <img src="assets/icons/refresh-cw.svg" alt="">刷新
+            </button>
+          </div>
+          <div class="history-layout">
+            <div class="history-table-wrap">
+              <table>
+                <thead><tr><th>照片</th><th>状态</th><th>更新时间</th><th>操作</th></tr></thead>
+                <tbody id="history-rows">
+                  <tr class="empty-row"><td colspan="4">还没有本机任务记录。</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <aside id="history-detail" class="history-detail">
+              <div class="empty-detail">
+                <img src="assets/icons/panel-right.svg" alt="">
+                <strong>选择一条任务</strong>
+                <span>在这里查看状态、风险和输出。</span>
+              </div>
+            </aside>
           </div>
         </section>
       </section>
 
-      <section id="page-settings" class="page" aria-labelledby="settings-title">
-        <div class="page-heading">
-          <div><p class="eyebrow">PREFERENCES</p><h1 id="settings-title">设置</h1>
-            <p class="page-subtitle">默认值已经针对摄影批处理优化。</p></div>
-        </div>
-        <div class="settings-panel">
-          <div class="setting-row">
-            <div><label for="preset">处理预设</label><p>平衡速度、检出率和修复上下文。</p></div>
-            <select id="preset">
-              <option value="balanced">均衡（推荐）</option>
-              <option value="speed">速度优先</option>
-              <option value="quality">精细处理</option>
-            </select>
+      <section id="page-settings" class="page page-standard" aria-labelledby="settings-title">
+        <header class="page-heading">
+          <div>
+            <p class="eyebrow">PREFERENCES</p>
+            <h1 id="settings-title" tabindex="-1">设置</h1>
+            <p>默认值已经针对摄影批处理优化。</p>
           </div>
-          <div class="setting-row">
-            <div><span class="setting-label">计算设备</span><p>轻量 ONNX Runtime，本地离线运行，无需安装 CUDA。</p></div>
-            <strong id="gpu-name">正在检测…</strong>
-          </div>
-          <div class="setting-row">
-            <div><span class="setting-label">运行模式</span><p>模型会在批次开始时加载一次并复用。</p></div>
-            <strong id="runtime-name">—</strong>
-          </div>
-          <div class="setting-row">
-            <div><span class="setting-label">模型状态</span><p>启动处理前校验固定版本和 SHA-256。</p></div>
-            <strong id="model-state">正在校验…</strong>
-          </div>
-          <div class="setting-row">
-            <div><span class="setting-label">界面运行环境</span><p>用于显示本地轻量界面的 Microsoft WebView2。</p></div>
-            <strong id="webview2-version">正在检测…</strong>
-          </div>
-          <div class="setting-row">
-            <div><span class="setting-label">诊断与支持</span><p>导出版本、运行环境和日志；不包含照片、文件路径或任务数据库。</p></div>
-            <button id="export-diagnostics-button" class="button" type="button">导出诊断包</button>
-          </div>
-          <div class="setting-row">
-            <div><span class="setting-label">帮助与隐私</span><p>查看使用指南、故障排除和本机数据说明。</p></div>
-            <div class="setting-actions">
-              <button class="output-link support-document" data-document="user-guide" type="button">使用指南</button>
-              <button class="output-link support-document" data-document="troubleshooting" type="button">故障排除</button>
-              <button class="output-link support-document" data-document="privacy" type="button">隐私说明</button>
+        </header>
+        <div class="settings-layout">
+          <section class="settings-section" aria-labelledby="settings-processing">
+            <div class="settings-section-head">
+              <span class="section-index">01</span>
+              <div><h2 id="settings-processing">处理</h2><p>选择速度与精细程度的平衡。</p></div>
             </div>
-          </div>
+            <div class="setting-row">
+              <div><label for="preset">处理预设</label><p>修改会应用到下一批任务。</p></div>
+              <select id="preset">
+                <option value="balanced">均衡（推荐）</option>
+                <option value="speed">速度优先</option>
+                <option value="quality">精细处理</option>
+              </select>
+            </div>
+          </section>
+          <section class="settings-section" aria-labelledby="settings-performance">
+            <div class="settings-section-head">
+              <span class="section-index">02</span>
+              <div><h2 id="settings-performance">性能</h2><p>本机离线运行，无需安装 CUDA。</p></div>
+            </div>
+            <dl class="settings-facts">
+              <div><dt>计算设备</dt><dd id="gpu-name">正在检测…</dd></div>
+              <div><dt>运行模式</dt><dd id="runtime-name">—</dd></div>
+              <div><dt>模型状态</dt><dd id="model-state">正在校验…</dd></div>
+            </dl>
+          </section>
+          <section class="settings-section" aria-labelledby="settings-data">
+            <div class="settings-section-head">
+              <span class="section-index">03</span>
+              <div><h2 id="settings-data">数据与支持</h2><p>照片、EXIF 和任务记录始终留在本机。</p></div>
+            </div>
+            <details class="runtime-details">
+              <summary>运行环境详情</summary>
+              <div class="runtime-detail-row"><span>WebView2</span><strong id="webview2-version">正在检测…</strong></div>
+            </details>
+            <div class="settings-actions">
+              <button id="export-diagnostics-button" class="button button-secondary" type="button">导出诊断包</button>
+              <button class="button button-quiet support-document" data-document="user-guide" type="button">使用指南</button>
+              <button class="button button-quiet support-document" data-document="troubleshooting" type="button">故障排除</button>
+              <button class="button button-quiet support-document" data-document="privacy" type="button">隐私说明</button>
+            </div>
+          </section>
         </div>
       </section>
     </main>
 
+    <div id="confirm-dialog" class="dialog-backdrop" hidden>
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title"
+               aria-describedby="dialog-description">
+        <div class="dialog-icon"><img src="assets/icons/triangle-alert.svg" alt=""></div>
+        <h2 id="dialog-title">确认操作</h2>
+        <p id="dialog-description">此操作会停止尚未开始的任务。</p>
+        <div class="dialog-actions">
+          <button id="dialog-cancel" class="button button-secondary" type="button">返回</button>
+          <button id="dialog-confirm" class="button button-danger" type="button">确认</button>
+        </div>
+      </section>
+    </div>
+    <div id="live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </div>
-  <script src="app.js"></script>
+
+  <script defer src="core/state.js"></script>
+  <script defer src="core/bridge.js"></script>
+  <script defer src="components/toast.js"></script>
+  <script defer src="components/dialog.js"></script>
+  <script defer src="batch/preview.js"></script>
+  <script defer src="batch/filmstrip.js"></script>
+  <script defer src="batch/workspace.js"></script>
+  <script defer src="review/editor.js"></script>
+  <script defer src="history/history.js"></script>
+  <script defer src="settings/settings.js"></script>
+  <script defer src="core/shortcuts.js"></script>
+  <script defer src="app.js"></script>
 </body>
 </html>

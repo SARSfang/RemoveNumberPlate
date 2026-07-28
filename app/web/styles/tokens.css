@@ -1,0 +1,97 @@
+:root {
+  color-scheme: dark;
+
+  /* Primitive */
+  --ink-950: #070b12;
+  --ink-925: #0a1019;
+  --ink-900: #0d1420;
+  --ink-875: #111a28;
+  --ink-850: #152031;
+  --ink-800: #1a2739;
+  --ink-750: #223249;
+  --ink-700: #2d405b;
+  --slate-500: #77879d;
+  --slate-400: #97a6b9;
+  --slate-300: #b8c4d3;
+  --slate-100: #eef3f9;
+  --blue-650: #2b69e8;
+  --blue-600: #3478f6;
+  --blue-500: #4e8bff;
+  --blue-300: #9cbdff;
+  --green-500: #3ac89b;
+  --amber-500: #e9b153;
+  --red-500: #ef717a;
+  --white: #ffffff;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  --radius-1: 5px;
+  --radius-2: 8px;
+  --radius-3: 12px;
+  --radius-4: 16px;
+
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 14px;
+  --font-lg: 16px;
+  --font-xl: 22px;
+  --font-2xl: 30px;
+
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+
+  /* Semantic */
+  --canvas: var(--ink-950);
+  --canvas-subtle: var(--ink-925);
+  --surface: var(--ink-900);
+  --surface-raised: var(--ink-875);
+  --surface-strong: var(--ink-850);
+  --surface-hover: var(--ink-800);
+  --border-subtle: var(--ink-800);
+  --border: var(--ink-750);
+  --border-strong: var(--ink-700);
+  --text: var(--slate-100);
+  --text-secondary: var(--slate-300);
+  --text-muted: var(--slate-400);
+  --text-quiet: var(--slate-500);
+  --accent: var(--blue-600);
+  --accent-hover: var(--blue-500);
+  --accent-soft: #102b57;
+  --accent-border: #2e6bd6;
+  --success: var(--green-500);
+  --warning: var(--amber-500);
+  --warning-soft: #4c351d;
+  --warning-badge: #563f1d;
+  --warning-text: #ffd78f;
+  --danger: var(--red-500);
+  --danger-border: #8d444b;
+  --danger-surface: #5d2b32;
+  --danger-surface-hover: #73343c;
+  --danger-text: #ffe3e5;
+  --focus: var(--blue-300);
+  --scrim: rgba(4, 7, 12, .76);
+  --canvas-overlay: rgba(7, 11, 18, .82);
+  --floating-surface: rgba(13, 20, 32, .92);
+  --index-surface: rgba(7, 11, 18, .78);
+
+  /* Component */
+  --topbar-height: 60px;
+  --button-height: 40px;
+  --button-compact-height: 34px;
+  --button-radius: var(--radius-2);
+  --panel-radius: var(--radius-3);
+  --panel-border: var(--border-subtle);
+  --panel-bg: var(--surface);
+  --inspector-width: 248px;
+  --filmstrip-height: 156px;
+  --focus-ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--focus);
+  --shadow-panel: 0 14px 40px rgba(0, 0, 0, .2);
+  --shadow-drawer: -20px 0 45px rgba(0, 0, 0, .32);
+}
