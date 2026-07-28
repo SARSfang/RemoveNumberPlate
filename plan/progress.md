@@ -192,6 +192,11 @@ packages may not provide compatible wheels.
 
 ## RC3 release hardening
 
+- Clean GitHub `windows-2025` run
+  [30320399905](https://github.com/SARSfang/RemoveNumberPlate/actions/runs/30320399905)
+  passed at commit `1c77c75`; its single installer artifact reports product
+  version `0.2.0.3` and SHA-256
+  `a25650835501499836c1b8f86d77e86f00529de81de99069e00479377db204d3`.
 - Removed the stale package-level `1.0.0` constant; package, UI, Windows
   resources and installer now resolve to `0.2.0-rc.3`.
 - Batch submission is blocked when any enabled model is missing or fails its
