@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from app.core.detector import Detector
-from app.domain.detection import BoundingBox, Detection
+from app.domain.detection import BoundingBox, Detection, Quadrilateral
 
 
 class VehicleFirstPlateDetector:
@@ -41,6 +41,16 @@ class VehicleFirstPlateDetector:
             crop = np.ascontiguousarray(image_rgb[y1:y2, x1:x2])
             for plate in self._plate_detector.detect(crop):
                 plate_box = plate.box
+                polygon = (
+                    Quadrilateral(
+                        tuple(
+                            (point_x + x1, point_y + y1)
+                            for point_x, point_y in plate.polygon.points
+                        )
+                    )
+                    if plate.polygon is not None
+                    else None
+                )
                 results.append(
                     Detection(
                         BoundingBox(
@@ -50,6 +60,7 @@ class VehicleFirstPlateDetector:
                             plate_box.y2 + y1,
                         ),
                         plate.confidence,
+                        polygon=polygon,
                     )
                 )
         return results

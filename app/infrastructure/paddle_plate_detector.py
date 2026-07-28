@@ -16,7 +16,7 @@ from numpy.typing import NDArray
 from shapely.geometry import Polygon
 
 from app.config import AppPaths
-from app.domain.detection import BoundingBox, Detection
+from app.domain.detection import BoundingBox, Detection, Quadrilateral
 from app.infrastructure.paddle_runtime import configure_nvidia_dll_search_path
 
 
@@ -142,7 +142,7 @@ def decode_db_map(
     unclip_ratio: float = 1.5,
     max_candidates: int = 1000,
 ) -> list[Detection]:
-    """Decode a DB probability map to axis-aligned source-image detections."""
+    """Decode a DB probability map to source-image perspective detections."""
 
     if probability.ndim != 2:
         raise ValueError("probability map must have HxW shape")
@@ -167,15 +167,38 @@ def decode_db_map(
         if expanded_short_side < 5:
             continue
 
-        x_values = expanded_box[:, 0] / map_width * source_width
-        y_values = expanded_box[:, 1] / map_height * source_height
+        x_values = np.clip(
+            expanded_box[:, 0] / map_width * source_width,
+            0,
+            source_width,
+        )
+        y_values = np.clip(
+            expanded_box[:, 1] / map_height * source_height,
+            0,
+            source_height,
+        )
         x1 = float(np.clip(x_values.min(), 0, source_width))
         y1 = float(np.clip(y_values.min(), 0, source_height))
         x2 = float(np.clip(x_values.max(), 0, source_width))
         y2 = float(np.clip(y_values.max(), 0, source_height))
         if x2 <= x1 or y2 <= y1:
             continue
-        detections.append(Detection(BoundingBox(x1, y1, x2, y2), score))
+        try:
+            polygon = Quadrilateral(
+                tuple(
+                    (float(x), float(y))
+                    for x, y in zip(x_values, y_values, strict=True)
+                )
+            )
+        except ValueError:
+            continue
+        detections.append(
+            Detection(
+                BoundingBox(x1, y1, x2, y2),
+                score,
+                polygon=polygon,
+            )
+        )
 
     return detections
 

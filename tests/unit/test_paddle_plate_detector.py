@@ -47,3 +47,5 @@ def test_decode_db_map_returns_source_scaled_detection() -> None:
     assert detection.box.x2 > 192
     assert detection.box.y1 < 48
     assert detection.box.y2 > 80
+    assert detection.polygon is not None
+    assert detection.polygon.bounding_box == detection.box

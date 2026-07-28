@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from app.core.two_stage_detector import VehicleFirstPlateDetector
-from app.domain.detection import BoundingBox, Detection
+from app.domain.detection import BoundingBox, Detection, Quadrilateral
 
 
 @dataclass
@@ -25,3 +25,16 @@ def test_two_stage_detector_offsets_crop_results() -> None:
 
     assert plate.last_shape == (40, 60, 3)
     assert result == [Detection(BoundingBox(25, 30, 45, 40), 0.9)]
+
+
+def test_two_stage_detector_offsets_plate_polygon() -> None:
+    vehicle = StubDetector([Detection(BoundingBox(20, 10, 80, 50), 0.95)])
+    polygon = Quadrilateral(((5, 20), (25, 18), (24, 30), (4, 31)))
+    plate = StubDetector([Detection(polygon.bounding_box, 0.9, polygon=polygon)])
+    pipeline = VehicleFirstPlateDetector(vehicle, plate, crop_margin_ratio=0)
+
+    result = pipeline.detect(np.zeros((100, 120, 3), dtype=np.uint8))
+
+    assert result[0].polygon == Quadrilateral(
+        ((25, 30), (45, 28), (44, 40), (24, 41))
+    )
