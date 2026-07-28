@@ -24,7 +24,7 @@ packages may not provide compatible wheels.
 - M3 lightweight batch desktop UI: complete
 - M4 exception review editor: implementation complete; user acceptance on
   private photos remains pending
-- M5 Windows release candidate: RC2 engineering complete; external commercial
+- M5 Windows release candidate: RC3 engineering in progress; external commercial
   release gates remain
 
 ## Current decisions
@@ -189,3 +189,19 @@ packages may not provide compatible wheels.
 - Remaining external gates: private-photo quality sign-off, legal review of
   Paddle weight redistribution, a Windows code-signing certificate, and an
   applicable Inno Setup commercial license.
+
+## RC3 release hardening
+
+- Removed the stale package-level `1.0.0` constant; package, UI, Windows
+  resources and installer now resolve to `0.2.0-rc.3`.
+- Batch submission is blocked when any enabled model is missing or fails its
+  pinned SHA-256, and the UI disables input controls in that state.
+- Each discovered batch receives a per-volume storage preflight before model
+  construction, with a 512 MiB safety reserve and actionable failure message.
+- Release builds delete only prior `*-Setup-v*-win64.exe` artifacts inside
+  `dist/installer`, preventing wildcard uploads from mixing candidate versions.
+- Local verification passed 94 tests (one documented non-ASCII skip), frozen
+  packaging, installer acceptance and RC2-to-RC3 in-place upgrade with desktop
+  smoke, user-data preservation and clean uninstall.
+- Local RC3 installer SHA-256:
+  `33bae5c65866b963b7d18cce114f5a15bcaa7601fab5681c168b511db6828852`.

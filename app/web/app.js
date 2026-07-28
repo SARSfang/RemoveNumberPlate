@@ -18,6 +18,7 @@
     view: { scale: 1, x: 0, y: 0 },
     pointer: null,
     spaceDown: false,
+    modelsReady: false,
     toastTimer: null
   };
 
@@ -538,6 +539,11 @@
     $("#runtime-name").textContent = bootstrap.runtime;
     $("#model-state").textContent = bootstrap.models_ready ? "已校验，可以处理" : "模型缺失或校验失败";
     $("#model-state").style.color = bootstrap.models_ready ? "var(--success)" : "var(--danger)";
+    $("#model-state").title = bootstrap.model_issue || "";
+    state.modelsReady = Boolean(bootstrap.models_ready);
+    $("#choose-files").disabled = !state.modelsReady;
+    $("#choose-folder").disabled = !state.modelsReady;
+    $("#drop-zone").classList.toggle("is-disabled", !state.modelsReady);
     $("#webview2-version").textContent = bootstrap.webview2_version;
     $("#preset").value = bootstrap.preset || "balanced";
     const counts = bootstrap.history_counts || {};

@@ -29,8 +29,8 @@ from app.core.pipeline import ManualMaskProcessor
 from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
 from app.infrastructure.device_probe import probe_device
-from app.infrastructure.model_registry import load_manifest
 from app.infrastructure.webview2 import detect_webview2_version
+from app.release_readiness import inspect_models, inspect_storage
 from app.settings import SettingsStore, UserSettings
 from app.version import __display_version__, __version__
 
@@ -160,6 +160,14 @@ class BatchService:
                 )
                 self._finish(False)
                 return
+            storage = inspect_storage(sources)
+            if not storage.ready:
+                self._emit(
+                    "fatal_error",
+                    {"message": storage.issue or "输出磁盘空间预检失败。"},
+                )
+                self._finish(False)
+                return
             processor = self._processor
             if processor is None:
                 processor = self._processor_factory()
@@ -273,13 +281,13 @@ class DesktopApi:
     def bootstrap(self) -> dict[str, object]:
         paths = AppPaths.default()
         device = probe_device()
+        readiness = inspect_models(paths.model_manifest, paths.models_dir)
         model_states = [
             {
-                "id": artifact.model_id,
-                "ready": artifact.verify(paths.models_dir / artifact.filename),
+                "id": state.model_id,
+                "ready": state.ready,
             }
-            for artifact in load_manifest(paths.model_manifest)
-            if artifact.enabled
+            for state in readiness.states
         ]
         with JobStore(self._job_database) as store:
             recovered = store.recover_interrupted()
@@ -289,8 +297,9 @@ class DesktopApi:
             "version_raw": __version__,
             "gpu": device.gpu_name or "未检测到独立显卡",
             "cuda_available": False,
-            "models_ready": all(value["ready"] for value in model_states),
+            "models_ready": readiness.ready,
             "model_states": model_states,
+            "model_issue": readiness.issue,
             "history_counts": counts,
             "recovered_jobs": recovered,
             "runtime": "轻量 ONNX Runtime · 本地离线处理",
@@ -577,6 +586,15 @@ class DesktopApi:
         safe_paths = [Path(value) for value in paths if Path(value).exists()]
         if not safe_paths:
             return {"accepted": False, "message": "没有收到有效的文件或文件夹。"}
+        readiness = inspect_models(
+            self._paths.model_manifest,
+            self._paths.models_dir,
+        )
+        if not readiness.ready:
+            return {
+                "accepted": False,
+                "message": readiness.issue or "AI 模型未通过完整性校验，请重新安装。",
+            }
         accepted = self._service.start(safe_paths)
         return {
             "accepted": accepted,

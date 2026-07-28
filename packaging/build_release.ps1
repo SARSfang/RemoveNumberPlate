@@ -40,6 +40,12 @@ try {
     if ($LASTEXITCODE -ne 0 -or -not $ReleaseVersion) {
         throw "Unable to read the release version."
     }
+    $InstallerOutput = Join-Path $ProjectRoot "dist\installer"
+    if (Test-Path -LiteralPath $InstallerOutput) {
+        Get-ChildItem -LiteralPath $InstallerOutput `
+            -Filter "*-Setup-v*-win64.exe" -File |
+            Remove-Item -Force
+    }
     & $Python -m scripts.verify_models
     if ($LASTEXITCODE -ne 0) { throw "Model verification failed." }
 

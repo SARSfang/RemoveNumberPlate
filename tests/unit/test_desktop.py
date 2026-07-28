@@ -7,11 +7,13 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from app import desktop
 from app.core.job_store import JobStore
 from app.desktop import BatchService, DesktopApi, frontend_directory
 from app.domain.detection import BoundingBox, Detection
 from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
+from app.release_readiness import ModelReadiness, StorageReadiness
 
 
 class FakeProcessor:
@@ -109,6 +111,37 @@ def test_batch_service_rejects_controls_while_idle(tmp_path: Path) -> None:
     assert not service.cancel()
 
 
+def test_batch_service_stops_before_model_load_when_storage_is_low(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source = tmp_path / "source.jpg"
+    source.write_bytes(b"source")
+    events: list[tuple[str, dict[str, object]]] = []
+    constructions = 0
+
+    def factory() -> FakeProcessor:
+        nonlocal constructions
+        constructions += 1
+        return FakeProcessor()
+
+    monkeypatch.setattr(
+        desktop,
+        "inspect_storage",
+        lambda _sources: StorageReadiness(False, 1, 0, "磁盘空间不足"),
+    )
+    service = BatchService(
+        lambda name, payload: events.append((name, payload)),
+        factory,
+        job_database=tmp_path / "jobs.sqlite3",
+    )
+
+    assert service.start([source])
+    assert service.wait()
+    assert constructions == 0
+    assert ("fatal_error", {"message": "磁盘空间不足"}) in events
+
+
 def test_batch_service_reuses_model_session_across_batches(tmp_path: Path) -> None:
     source = tmp_path / "source.jpg"
     source.write_bytes(b"source")
@@ -158,6 +191,25 @@ def test_desktop_api_exposes_no_public_object_graph() -> None:
     api = DesktopApi(lambda: FakeProcessor())
 
     assert all(name.startswith("_") for name in vars(api))
+
+
+def test_desktop_api_rejects_batch_when_models_fail_integrity(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source = tmp_path / "source.jpg"
+    source.write_bytes(b"source")
+    monkeypatch.setattr(
+        desktop,
+        "inspect_models",
+        lambda _manifest, _models: ModelReadiness(False, (), "模型校验失败"),
+    )
+    api = DesktopApi(lambda: FakeProcessor(), job_database=tmp_path / "jobs.sqlite3")
+
+    response = api.start_batch([str(source)])
+
+    assert response == {"accepted": False, "message": "模型校验失败"}
+    assert not api._service.busy
 
 
 def test_desktop_review_round_trip_uses_persisted_detection(tmp_path: Path) -> None:
