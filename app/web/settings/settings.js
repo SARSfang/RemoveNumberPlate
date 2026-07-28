@@ -27,6 +27,10 @@
     const percent = Math.max(-30, Math.min(100, Math.round(Number(value))));
     const safePercent = Number.isFinite(percent) ? percent : 35;
     $("#default-mask-margin").value = String(safePercent);
+    $("#default-mask-margin").setAttribute(
+      "aria-valuetext",
+      `${safePercent >= 0 ? "+" : ""}${safePercent}%`
+    );
     $("#default-mask-margin-number").value = String(safePercent);
     $("#default-mask-margin-value").textContent =
       `${safePercent >= 0 ? "+" : ""}${safePercent}%`;
@@ -83,10 +87,10 @@
       renderMaskMargin(event.currentTarget.value);
     });
     $("#default-mask-margin").addEventListener("change", (event) => {
-      saveMaskMargin(event.currentTarget.value);
+      return saveMaskMargin(event.currentTarget.value);
     });
     $("#default-mask-margin-number").addEventListener("change", (event) => {
-      saveMaskMargin(event.currentTarget.value);
+      return saveMaskMargin(event.currentTarget.value);
     });
     $("#export-diagnostics-button").addEventListener("click", async () => {
       const button = $("#export-diagnostics-button");

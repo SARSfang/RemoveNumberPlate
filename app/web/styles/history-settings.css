@@ -86,6 +86,7 @@
 }
 
 .history-layout {
+  position: relative;
   height: calc(100% - 64px);
   min-height: 0;
   display: grid;
@@ -125,7 +126,7 @@
 }
 
 .output-link {
-  min-height: 30px;
+  min-height: 40px;
   padding: 0 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-1);
@@ -334,6 +335,9 @@
 }
 
 .runtime-details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   padding: 10px 12px;
   color: var(--text-muted);
   cursor: pointer;
@@ -356,4 +360,51 @@
 .settings-section-body {
   min-width: 0;
   padding: 16px 22px 22px;
+}
+
+.history-detail-close {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .history-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .history-table-wrap {
+    border-right: 0;
+  }
+
+  .history-detail {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    width: min(320px, 100%);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-drawer);
+    transform: translateX(104%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform var(--duration-base), visibility 0s linear var(--duration-base);
+  }
+
+  .history-detail.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+
+  .history-detail-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: grid;
+  }
+
+  .history-detail h2 {
+    padding-right: 42px;
+  }
 }

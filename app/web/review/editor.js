@@ -249,6 +249,10 @@
     }
     const percent = Math.round(state.marginRatio * 100);
     $("#mask-margin").value = String(percent);
+    $("#mask-margin").setAttribute(
+      "aria-valuetext",
+      `${percent >= 0 ? "+" : ""}${percent}%`
+    );
     $("#mask-margin-value").textContent = `${percent >= 0 ? "+" : ""}${percent}%`;
   }
 
@@ -889,15 +893,24 @@
     $("#brush-size").addEventListener("input", (event) => {
       state.brushSize = Number(event.target.value);
       $("#brush-size-value").textContent = state.brushSize;
+      event.target.setAttribute("aria-valuetext", `${state.brushSize} 像素`);
     });
     $("#mask-opacity").addEventListener("input", (event) => {
       state.maskOpacity = Number(event.target.value) / 100;
+      event.target.setAttribute(
+        "aria-valuetext",
+        `${Math.round(state.maskOpacity * 100)}%`
+      );
       draw();
     });
     $("#mask-margin").addEventListener("input", (event) => {
       const percent = Number(event.target.value);
       state.marginRatio = percent / 100;
       $("#mask-margin-value").textContent = `${percent >= 0 ? "+" : ""}${percent}%`;
+      event.target.setAttribute(
+        "aria-valuetext",
+        `${percent >= 0 ? "+" : ""}${percent}%`
+      );
       draw();
     });
     $("#mask-margin").addEventListener("change", () => {

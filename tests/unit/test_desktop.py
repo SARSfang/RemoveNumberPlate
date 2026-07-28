@@ -97,12 +97,14 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     assert 'id="save-adjustment-button"' in markup
     assert 'data-document="privacy"' in markup
     assert 'role="tablist"' in markup
+    assert 'role="tab" aria-selected="true" aria-controls="canvas-stage"' in markup
     assert 'role="listbox"' in markup
     assert 'aria-modal="true"' in markup
     assert 'id="startup-retry-button"' in markup
     assert 'id="drop-title"' in markup
     assert 'id="default-mask-margin"' in markup
     assert 'id="default-mask-margin-number"' in markup
+    assert 'aria-label="任务详情"' in markup
     assert 'min="-30" max="100" step="1" value="35"' in markup
     assert "PREVIEW-FIRST WORKSPACE" not in markup
     assert "EXCEPTION INBOX" not in markup

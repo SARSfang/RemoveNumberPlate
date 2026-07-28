@@ -45,10 +45,18 @@
     return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("zh-CN");
   }
 
+  function closeDetail() {
+    const detail = $("#history-detail");
+    detail.classList.remove("is-open");
+    const selected = $("#history-rows tr.is-selected");
+    if (selected) selected.focus();
+  }
+
   function renderDetail(job) {
     const detail = $("#history-detail");
     detail.replaceChildren();
     if (!job) {
+      detail.classList.remove("is-open");
       const empty = document.createElement("div");
       empty.className = "empty-detail";
       const icon = document.createElement("img");
@@ -66,6 +74,16 @@
       detail.appendChild(empty);
       return;
     }
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "icon-button history-detail-close";
+    closeButton.setAttribute("aria-label", "关闭任务详情");
+    closeButton.title = "关闭任务详情";
+    const closeIcon = document.createElement("img");
+    closeIcon.src = "assets/icons/circle-x.svg";
+    closeIcon.alt = "";
+    closeButton.appendChild(closeIcon);
+    closeButton.addEventListener("click", closeDetail);
     const title = document.createElement("h2");
     title.textContent = job.name;
     const status = document.createElement("span");
@@ -88,12 +106,15 @@
       row.append(dt, dd);
       facts.appendChild(row);
     });
-    detail.append(title, status, facts);
+    detail.append(closeButton, title, status, facts);
   }
 
   function showDetail(job) {
     state.selectedId = job.id;
     render();
+    if (window.matchMedia("(max-width: 800px)").matches) {
+      $("#history-detail").classList.add("is-open");
+    }
   }
 
   async function openOutput(job) {
@@ -231,6 +252,15 @@
     $("#refresh-history-button").addEventListener("click", refresh);
     $("#history-search").addEventListener("input", render);
     $("#history-filter").addEventListener("change", render);
+    document.addEventListener("keydown", (event) => {
+      if (
+        event.key === "Escape" &&
+        $("#history-detail").classList.contains("is-open")
+      ) {
+        event.preventDefault();
+        closeDetail();
+      }
+    });
   }
 
   PlateApp.history = { init, refresh, render, state };

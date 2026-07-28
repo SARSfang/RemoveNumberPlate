@@ -245,10 +245,11 @@
                 <button class="tool-button" data-tool="remove_detection" type="button"
                         aria-pressed="false" title="点击删除车牌框">删除车牌框</button>
               </div>
-              <span class="toolbar-divider"></span>
+              <span class="toolbar-divider" aria-hidden="true"></span>
               <div id="brush-control" class="brush-control" hidden>
                 <label for="brush-size">笔刷 <span id="brush-size-value">36</span></label>
-                <input id="brush-size" type="range" min="8" max="160" value="36">
+                <input id="brush-size" type="range" min="8" max="160" value="36"
+                       aria-valuetext="36 像素">
               </div>
               <div class="tool-group" aria-label="历史">
                 <button id="undo-button" class="tool-button" type="button" title="撤销 (Ctrl+Z)" disabled>撤销</button>
@@ -256,11 +257,13 @@
                 <button id="restore-button" class="tool-button" type="button">恢复自动框</button>
               </div>
               <label class="margin-control" for="mask-margin">边缘
-                <input id="mask-margin" type="range" min="-30" max="100" step="1" value="35">
+                <input id="mask-margin" type="range" min="-30" max="100" step="1" value="35"
+                       aria-valuetext="+35%">
                 <span id="mask-margin-value">+35%</span>
               </label>
               <label class="mask-opacity-control" for="mask-opacity">遮罩
-                <input id="mask-opacity" type="range" min="15" max="70" value="36">
+                <input id="mask-opacity" type="range" min="15" max="70" value="36"
+                       aria-valuetext="36%">
               </label>
             </div>
             <div id="canvas-stage" class="canvas-stage">
@@ -268,9 +271,10 @@
               <div id="canvas-loading" class="canvas-loading">正在载入预览…</div>
               <div class="editor-view-tabs" role="tablist" aria-label="编辑器视图">
                 <button id="editor-mask-tab" class="preview-tab is-active" type="button"
-                        aria-selected="true">原图与区域</button>
+                        role="tab" aria-selected="true" aria-controls="canvas-stage">原图与区域</button>
                 <button id="editor-result-tab" class="preview-tab" type="button"
-                        aria-selected="false" disabled>临时结果</button>
+                        role="tab" aria-selected="false" aria-controls="canvas-stage"
+                        disabled>临时结果</button>
               </div>
             </div>
             <div class="editor-footer">
@@ -330,7 +334,7 @@
                 </tbody>
               </table>
             </div>
-            <aside id="history-detail" class="history-detail">
+            <aside id="history-detail" class="history-detail" aria-label="任务详情">
               <div class="empty-detail">
                 <img src="assets/icons/panel-right.svg" alt="">
                 <strong>选择一条任务</strong>
@@ -375,7 +379,8 @@
                 <div class="margin-setting-control">
                   <input id="default-mask-margin" type="range"
                          min="-30" max="100" step="1" value="35"
-                         aria-describedby="default-mask-margin-warning">
+                         aria-describedby="default-mask-margin-warning"
+                         aria-valuetext="+35%">
                   <label class="sr-only" for="default-mask-margin-number">边缘扩展百分比</label>
                   <input id="default-mask-margin-number" type="number"
                          min="-30" max="100" step="1" value="35"

@@ -47,7 +47,7 @@ h1[tabindex="-1"]:focus {
 }
 
 button:disabled {
-  cursor: default;
+  cursor: not-allowed;
 }
 
 h1,
@@ -278,6 +278,19 @@ main {
 
   .app-shell {
     min-height: 0;
+  }
+
+  .page-standard {
+    padding: var(--space-4);
+  }
+
+  .page-heading {
+    margin-bottom: var(--space-3);
+  }
+
+  .page-heading .eyebrow,
+  .page-heading p:last-child {
+    display: none;
   }
 
   .topbar {

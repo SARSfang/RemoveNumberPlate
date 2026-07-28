@@ -184,7 +184,7 @@
 }
 
 #adjust-region-button:not(:disabled) {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
   color: var(--accent-hover);
 }
 
@@ -316,7 +316,7 @@
 
 .zoom-value {
   min-width: 48px;
-  height: 32px;
+  height: 40px;
   color: var(--text-muted);
   font-size: var(--font-sm);
 }
@@ -418,7 +418,7 @@
 .filmstrip-shell {
   min-width: 0;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
   align-items: center;
   margin: 0 24px 10px;
   overflow: hidden;
@@ -616,8 +616,8 @@
 
   #add-files-button,
   #review-queue-button {
-    width: 36px;
-    min-width: 36px;
+    width: 40px;
+    min-width: 40px;
     padding: 0;
     overflow: hidden;
     font-size: 0;
@@ -635,6 +635,14 @@
   .filmstrip-shell {
     margin: 0 12px;
     padding: 8px 6px;
+  }
+
+  .batch-empty {
+    padding: var(--space-3);
+  }
+
+  .drop-zone {
+    min-height: 0;
   }
 
   .filmstrip-item {

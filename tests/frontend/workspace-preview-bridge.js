@@ -31,7 +31,7 @@
         throw new Error("无法读取本地运行环境");
       }
       return {
-        version: "v0.2.0-rc.6 · 视觉预览",
+        version: "v0.2.0-rc.7 · 视觉预览",
         gpu: "NVIDIA GeForce RTX 4070",
         runtime: "轻量 ONNX Runtime · 本地离线处理",
         models_ready: startupMode !== "models",
@@ -40,6 +40,7 @@
           : "",
         webview2_version: "138.0",
         preset: "balanced",
+        mask_margin_percent: 35,
         history_counts: { completed: 2, review_required: 0 },
         recovered_jobs: 0,
         database_recovered: false,
@@ -232,6 +233,9 @@
     },
     async set_preset() {
       return { accepted: true, message: "处理预设已保存。" };
+    },
+    async set_mask_margin() {
+      return { accepted: true, message: "默认边缘扩展已保存。" };
     },
     async export_diagnostics() {
       return { accepted: true, message: "视觉预览不导出诊断包。" };

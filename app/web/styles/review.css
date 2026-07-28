@@ -96,7 +96,7 @@
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: 54px minmax(0, 1fr) 64px;
+  grid-template-rows: 58px minmax(0, 1fr) 64px;
   overflow: hidden;
 }
 
@@ -114,7 +114,7 @@
 }
 
 .tool-button {
-  min-height: 34px;
+  min-height: 40px;
   padding: 0 10px;
   border: 1px solid transparent;
   border-radius: var(--radius-1);
@@ -122,6 +122,7 @@
   color: var(--text-muted);
   cursor: pointer;
   font-size: var(--font-sm);
+  white-space: nowrap;
 }
 
 .tool-button:hover:not(:disabled) {
@@ -147,6 +148,7 @@
 
 .brush-control,
 .mask-opacity-control {
+  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -155,6 +157,7 @@
 }
 
 .margin-control {
+  min-height: 40px;
   align-items: center;
   color: var(--text-muted);
   display: flex;
@@ -204,8 +207,8 @@
 }
 
 .editor-view-tabs {
-  background: rgba(8, 12, 19, .82);
-  border: 1px solid var(--line);
+  background: var(--floating-surface);
+  border: 1px solid var(--border);
   border-radius: 9px;
   display: flex;
   left: 14px;
@@ -216,7 +219,7 @@
 }
 
 .editor-view-tabs .preview-tab {
-  min-height: 30px;
+  min-height: 40px;
 }
 
 #cancel-adjustment-button {
@@ -270,4 +273,34 @@
 .editor-file span {
   color: var(--text-quiet);
   font-size: var(--font-xs);
+}
+
+@media (max-width: 800px) {
+  .review-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .review-sidebar {
+    display: none;
+  }
+
+  .editor-panel {
+    grid-template-rows: 100px minmax(0, 1fr) 64px;
+  }
+
+  .editor-toolbar {
+    flex-wrap: wrap;
+    align-content: center;
+    gap: 6px 10px;
+    padding: 6px 12px;
+  }
+
+  .tool-group {
+    flex: 0 0 auto;
+  }
+
+  .margin-control,
+  .mask-opacity-control {
+    margin-left: 0;
+  }
 }

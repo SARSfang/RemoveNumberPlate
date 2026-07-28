@@ -84,7 +84,7 @@
   /* Component */
   --topbar-height: 60px;
   --button-height: 40px;
-  --button-compact-height: 34px;
+  --button-compact-height: 40px;
   --button-radius: var(--radius-2);
   --panel-radius: var(--radius-3);
   --panel-border: var(--border-subtle);

@@ -29,8 +29,8 @@ class PreviewHandler(SimpleHTTPRequestHandler):
                 '  <script defer src="core/state.js"></script>',
                 1,
             )
-            markup = markup.replace('.css"', '.css?preview=15"')
-            markup = markup.replace('.js"', '.js?preview=15"')
+            markup = markup.replace('.css"', '.css?preview=16"')
+            markup = markup.replace('.js"', '.js?preview=16"')
             self._send(markup.encode("utf-8"), "text/html; charset=utf-8")
             return
         if route == "/__preview__/bridge.js":
