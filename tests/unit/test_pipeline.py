@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from app.core.pipeline import ImageProcessor
+from app.core.pipeline import ImageProcessor, ManualMaskProcessor
 from app.domain.detection import BoundingBox, Detection
 from app.domain.job import JobStatus, RiskReason
 
@@ -62,3 +62,18 @@ def test_pipeline_routes_low_confidence_to_review(tmp_path: Path) -> None:
     assert result.status is JobStatus.REVIEW_REQUIRED
     assert RiskReason.LOW_CONFIDENCE in result.risks
     assert result.output is None
+
+
+def test_manual_processor_can_render_to_cache_without_formal_output(
+    tmp_path: Path,
+) -> None:
+    source = _source(tmp_path)
+    cache = tmp_path / "adjustment-cache" / "preview.png"
+    mask = np.zeros((300, 400), dtype=np.uint8)
+    mask[100:120, 100:200] = 255
+
+    result = ManualMaskProcessor(StubInpainter()).render_to(source, mask, cache)
+
+    assert result.output == cache
+    assert cache.is_file()
+    assert not (tmp_path / "车牌已消除").exists()

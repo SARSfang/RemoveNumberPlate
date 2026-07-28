@@ -7,6 +7,7 @@ from PIL import Image
 from app.core.image_io import (
     OUTPUT_DIRECTORY_NAME,
     allocate_output_path,
+    copy_verified_image_atomic,
     discover_images,
     load_image,
     write_image_atomic,
@@ -106,3 +107,15 @@ def test_atomic_write_preserves_safe_exif_and_dpi(tmp_path: Path) -> None:
         assert 274 not in result.getexif()
         assert result.info.get("icc_profile") == b"test-icc"
         assert result.info["dpi"][0] == pytest.approx(300, abs=1)
+
+
+def test_copy_verified_image_atomic_preserves_encoded_bytes(tmp_path: Path) -> None:
+    cache = tmp_path / "cache.jpg"
+    output = tmp_path / "output" / "photo_clean.jpg"
+    Image.new("RGB", (24, 16), (10, 20, 30)).save(cache, quality=93)
+
+    copy_verified_image_atomic(cache, output)
+
+    assert output.read_bytes() == cache.read_bytes()
+    with pytest.raises(FileExistsError):
+        copy_verified_image_atomic(cache, output)

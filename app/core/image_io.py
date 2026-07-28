@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from shutil import copy2
 from uuid import uuid4
 
 import numpy as np
@@ -166,4 +167,30 @@ def write_image_atomic(
         if isinstance(error, (FileExistsError, ImageIOError)):
             raise
         raise ImageIOError(f"failed to write output: {output}") from error
+    return output
+
+
+def copy_verified_image_atomic(cache_source: Path, output: Path) -> Path:
+    """Copy a verified rendered image to a new output path without re-encoding."""
+
+    if not cache_source.is_file():
+        raise FileNotFoundError(cache_source)
+    if output.exists():
+        raise FileExistsError(output)
+    try:
+        with Image.open(cache_source) as image:
+            expected_size = image.size
+    except (OSError, UnidentifiedImageError) as error:
+        raise ImageIOError(f"cannot decode cached image: {cache_source}") from error
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.parent / f".{output.stem}.{uuid4().hex}.tmp{output.suffix}"
+    try:
+        copy2(cache_source, temporary)
+        _verify_output(temporary, expected_size)
+        os.rename(temporary, output)
+    except Exception as error:
+        temporary.unlink(missing_ok=True)
+        if isinstance(error, (FileExistsError, ImageIOError)):
+            raise
+        raise ImageIOError(f"failed to copy cached output: {output}") from error
     return output

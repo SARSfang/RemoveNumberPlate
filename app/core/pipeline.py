@@ -98,18 +98,27 @@ class ManualMaskProcessor:
         source: Path,
         mask: NDArray[np.uint8],
     ) -> ProcessingResult:
+        while True:
+            output = allocate_output_path(source)
+            try:
+                return self.render_to(source, mask, output)
+            except FileExistsError:
+                continue
+
+    def render_to(
+        self,
+        source: Path,
+        mask: NDArray[np.uint8],
+        output: Path,
+    ) -> ProcessingResult:
+        """Render once to an explicit cache or final output path."""
+
         start = time.perf_counter()
         loaded = load_image(source)
         if mask.shape != loaded.pixels_rgb.shape[:2]:
             raise ValueError("manual mask size must match the orientation-normalized image")
         result_pixels = self._inpainter.inpaint(loaded.pixels_rgb, mask)
-        while True:
-            output = allocate_output_path(source)
-            try:
-                write_image_atomic(loaded, result_pixels, output)
-                break
-            except FileExistsError:
-                continue
+        write_image_atomic(loaded, result_pixels, output)
         return ProcessingResult(
             output,
             time.perf_counter() - start,
