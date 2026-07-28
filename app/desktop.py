@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import json
 import logging
 import os
@@ -12,17 +11,23 @@ import threading
 import time
 import zipfile
 from collections.abc import Callable, Sequence
-from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import webview
-from PIL import Image
 
 from app.cli import build_manual_processor, build_processor
 from app.config import PRESETS, AppPaths
 from app.core.batch import Processor
 from app.core.image_io import discover_images, load_image
+from app.core.job_preview import (
+    THUMBNAIL_BOUNDS,
+    THUMBNAIL_QUALITY,
+    JobPreview,
+    PreviewKind,
+    PreviewUnavailableReason,
+    build_job_preview,
+)
 from app.core.job_store import JobStore, prepare_job_database
 from app.core.manual_mask import build_manual_mask
 from app.core.pipeline import ManualMaskProcessor
@@ -168,12 +173,56 @@ class BatchService:
                 )
                 self._finish(False)
                 return
-            processor = self._processor
-            if processor is None:
-                processor = self._processor_factory()
-                self._processor = processor
             with JobStore(self._job_database) as store:
                 jobs = [(store.create_job(source), source) for source in sources]
+                self._emit(
+                    "batch_items_ready",
+                    {
+                        "items": [
+                            {
+                                "job_id": identifier,
+                                "name": source.name,
+                                "index": index,
+                                "status": JobStatus.QUEUED.value,
+                            }
+                            for index, (identifier, source) in enumerate(jobs, start=1)
+                        ]
+                    },
+                )
+                processor = self._processor
+                if processor is None:
+                    try:
+                        processor = self._processor_factory()
+                    except Exception as error:
+                        LOGGER.exception("AI processor initialization failed")
+                        message = "AI 引擎加载失败，请重启应用后重试。"
+                        for index, (identifier, source) in enumerate(jobs, start=1):
+                            result = ProcessingResult(
+                                None,
+                                0.0,
+                                status=JobStatus.FAILED,
+                                error=f"{type(error).__name__}: {error}",
+                            )
+                            store.record_result(identifier, result)
+                            self._emit(
+                                "item_finished",
+                                {
+                                    "job_id": identifier,
+                                    "name": source.name,
+                                    "index": index,
+                                    "total": len(jobs),
+                                    "status": result.status.value,
+                                    "elapsed": 0.0,
+                                    "output_available": False,
+                                    "detection_count": 0,
+                                    "risks": [],
+                                    "error": message,
+                                },
+                            )
+                        self._emit("fatal_error", {"message": message})
+                        self._finish(False)
+                        return
+                    self._processor = processor
                 for offset, (identifier, source) in enumerate(jobs):
                     if not self._ready_for_next():
                         for pending_identifier, _pending_source in jobs[offset:]:
@@ -184,7 +233,6 @@ class BatchService:
                     self._emit(
                         "item_started",
                         {
-                            "source": str(source),
                             "job_id": identifier,
                             "name": source.name,
                             "index": index,
@@ -211,14 +259,13 @@ class BatchService:
                     self._emit(
                         "item_finished",
                         {
-                            "source": str(source),
                             "job_id": identifier,
                             "name": source.name,
                             "index": index,
                             "total": len(jobs),
                             "status": result.status.value,
                             "elapsed": round(result.elapsed_seconds, 3),
-                            "output": str(result.output) if result.output else None,
+                            "output_available": bool(result.output),
                             "detection_count": result.detection_count,
                             "risks": [risk.value for risk in result.risks],
                             "error": result.error,
@@ -345,7 +392,6 @@ class DesktopApi:
                 "id": job.id,
                 "name": job.source.name,
                 "status": job.status.value,
-                "output": str(job.output) if job.output else None,
                 "elapsed": (
                     round(job.elapsed_seconds, 3)
                     if job.elapsed_seconds is not None
@@ -353,6 +399,10 @@ class DesktopApi:
                 ),
                 "updated_at": job.updated_at,
                 "error": job.error,
+                "detection_count": len(job.detections),
+                "risks": [risk.value for risk in job.risks],
+                "source_available": job.source.is_file(),
+                "output_available": bool(job.output and job.output.is_file()),
             }
             for job in jobs
         ]
@@ -460,7 +510,6 @@ class DesktopApi:
             {
                 "id": job.id,
                 "name": job.source.name,
-                "source": str(job.source),
                 "risks": [risk.value for risk in job.risks],
                 "detection_count": len(job.detections),
             }
@@ -473,24 +522,17 @@ class DesktopApi:
             commands = store.latest_mask_revision(identifier)
         if job.status is not JobStatus.REVIEW_REQUIRED:
             raise ValueError("job is not awaiting review")
-        loaded = load_image(job.source)
-        original_height, original_width = loaded.pixels_rgb.shape[:2]
-        preview = Image.fromarray(loaded.pixels_rgb, mode="RGB")
-        preview.thumbnail((1800, 1200), Image.Resampling.LANCZOS)
-        buffer = BytesIO()
-        preview.save(buffer, format="JPEG", quality=88, optimize=True)
-        data_url = "data:image/jpeg;base64," + base64.b64encode(
-            buffer.getvalue()
-        ).decode("ascii")
+        preview = build_job_preview(job, PreviewKind.ORIGINAL)
+        if not preview.available:
+            raise ValueError(preview.message)
         return {
             "id": job.id,
             "name": job.source.name,
-            "source": str(job.source),
-            "image": data_url,
-            "width": original_width,
-            "height": original_height,
-            "preview_width": preview.width,
-            "preview_height": preview.height,
+            "image": preview.image,
+            "width": preview.width,
+            "height": preview.height,
+            "preview_width": preview.preview_width,
+            "preview_height": preview.preview_height,
             "detections": [
                 {
                     "x1": detection.box.x1,
@@ -626,6 +668,71 @@ class DesktopApi:
 
     def cancel(self) -> bool:
         return self._service.cancel()
+
+    @staticmethod
+    def _preview_unavailable(
+        variant: str,
+        reason: PreviewUnavailableReason,
+    ) -> dict[str, object]:
+        return JobPreview.unavailable(variant, reason).as_dict()
+
+    def get_job_thumbnail(self, identifier: str) -> dict[str, object]:
+        try:
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+        except KeyError:
+            return self._preview_unavailable(
+                "thumbnail",
+                PreviewUnavailableReason.UNKNOWN_JOB,
+            )
+        kind = PreviewKind.RESULT if job.output is not None else PreviewKind.ORIGINAL
+        preview = build_job_preview(
+            job,
+            kind,
+            bounds=THUMBNAIL_BOUNDS,
+            quality=THUMBNAIL_QUALITY,
+        )
+        if not preview.available and kind is PreviewKind.RESULT:
+            preview = build_job_preview(
+                job,
+                PreviewKind.ORIGINAL,
+                bounds=THUMBNAIL_BOUNDS,
+                quality=THUMBNAIL_QUALITY,
+            )
+        return preview.as_dict()
+
+    def get_job_preview(self, identifier: str, variant: str) -> dict[str, object]:
+        try:
+            kind = PreviewKind(variant)
+        except ValueError:
+            return self._preview_unavailable(
+                variant,
+                PreviewUnavailableReason.INVALID_VARIANT,
+            )
+        try:
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+        except KeyError:
+            return self._preview_unavailable(
+                kind.value,
+                PreviewUnavailableReason.UNKNOWN_JOB,
+            )
+        return build_job_preview(job, kind).as_dict()
+
+    def open_job_output(self, identifier: str) -> bool:
+        try:
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+        except KeyError:
+            return False
+        if job.output is None:
+            return False
+        target = job.output.parent.resolve()
+        expected = (job.source.parent / "车牌已消除").resolve()
+        if target != expected or not target.is_dir():
+            return False
+        os.startfile(target)
+        return True
 
     def open_output(self, value: str) -> bool:
         path = Path(value)
