@@ -56,14 +56,20 @@ try {
     & $Python -m scripts.collect_licenses
     if ($LASTEXITCODE -ne 0) { throw "License collection failed." }
 
+    $Version = & $Python -c "from app.version import __version__; print(__version__)"
+    if ($LASTEXITCODE -ne 0 -or -not $Version) {
+        throw "Unable to read the preview version."
+    }
+    $PreviewVersionDirectory = Join-Path "dist\preview" $Version
     & $Python -m PyInstaller --noconfirm --clean `
-        --distpath dist\preview `
+        --distpath $PreviewVersionDirectory `
         --workpath build\preview `
         packaging\plate_clear.spec
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller preview build failed." }
 
     $PreviewExecutables = @(
-        Get-ChildItem -LiteralPath "dist\preview" -Filter "*.exe" -File -Recurse
+        Get-ChildItem -LiteralPath $PreviewVersionDirectory `
+            -Filter "*.exe" -File -Recurse
     )
     if ($PreviewExecutables.Count -ne 1) {
         throw "Expected one preview executable, found $($PreviewExecutables.Count)."
@@ -75,16 +81,22 @@ try {
         throw "Preview desktop smoke failed: $($Smoke.ExitCode)"
     }
 
-    $Version = & $Python -c "from app.version import __version__; print(__version__)"
     $Commit = (& git rev-parse HEAD).Trim()
     $BuildTime = [DateTime]::UtcNow.ToString("o")
+    $PreviewRoot = (Resolve-Path -LiteralPath "dist\preview").Path
+    $ExecutableRelativePath = $Executable.Substring(
+        $PreviewRoot.Length
+    ).TrimStart("\")
     @(
         "version=$Version"
         "commit=$Commit"
+        "executable=$ExecutableRelativePath"
         "built_at_utc=$BuildTime"
         "desktop_smoke=passed"
         "tests=$(if ($SkipTests) { 'skipped' } else { 'passed' })"
     ) | Set-Content -LiteralPath "dist\preview\BUILD.txt" -Encoding UTF8
+    Set-Content -LiteralPath "dist\preview\CURRENT.txt" `
+        -Value $Version -Encoding ASCII
 
     Write-Host ""
     Write-Host "Stable preview ready:"
