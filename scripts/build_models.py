@@ -150,7 +150,8 @@ def build_models(
             candidate = work_dir / destination.name
             if build.get("kind") == "download":
                 source = acquire_artifact(artifact, work_dir, source_cache)
-                shutil.copyfile(source, candidate)
+                if source.resolve() != candidate.resolve():
+                    shutil.copyfile(source, candidate)
             elif build.get("kind") == "paddle2onnx":
                 source_artifact = artifacts[str(build["source_model_id"])]
                 source = acquire_artifact(source_artifact, work_dir, source_cache)
