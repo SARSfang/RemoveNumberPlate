@@ -32,7 +32,9 @@ jobs:
 
       - name: Install application build dependencies
         shell: pwsh
-        run: python -m pip install -r requirements-dev.txt
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 
       - name: Rebuild pinned model artifacts
         shell: pwsh
@@ -41,7 +43,7 @@ jobs:
           .\.model-venv\Scripts\python.exe -m pip install `
             paddlepaddle==3.0.0 paddle2onnx==2.1.0 polygraphy
           .\.model-venv\Scripts\python.exe -m scripts.build_models
-          python -m scripts.verify_models
+          .\.venv\Scripts\python.exe -m scripts.verify_models
 
       - name: Install Inno Setup
         shell: pwsh
