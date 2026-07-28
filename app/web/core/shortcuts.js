@@ -57,7 +57,10 @@
       $("#review-canvas").style.cursor = "grab";
       return;
     }
-    if (event.ctrlKey && event.key.toLowerCase() === "z") {
+    if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "z") {
+      event.preventDefault();
+      $("#redo-button").click();
+    } else if (event.ctrlKey && event.key.toLowerCase() === "z") {
       event.preventDefault();
       $("#undo-button").click();
     } else if (event.ctrlKey && event.key.toLowerCase() === "y") {
@@ -70,10 +73,15 @@
         e: "brush_erase"
       }[event.key.toLowerCase()];
       const button = document.querySelector(`.tool-button[data-tool="${tool}"]`);
-      if (button) button.click();
+      if (button) {
+        event.preventDefault();
+        button.click();
+      }
     } else if (!event.ctrlKey && event.key === "[") {
+      event.preventDefault();
       PlateApp.review.move(-1);
     } else if (!event.ctrlKey && event.key === "]") {
+      event.preventDefault();
       PlateApp.review.move(1);
     }
   }
@@ -92,7 +100,10 @@
     window.addEventListener("keyup", (event) => {
       if (event.code !== "Space" || activePage() !== "review") return;
       PlateApp.review.state.spaceDown = false;
-      $("#review-canvas").style.cursor = "crosshair";
+      $("#review-canvas").style.cursor =
+        PlateApp.review.state.tool === "remove_detection"
+          ? "not-allowed"
+          : "crosshair";
     });
   }
 

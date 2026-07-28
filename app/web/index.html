@@ -232,10 +232,14 @@
           <section class="editor-panel" aria-label="人工掩码编辑器">
             <div class="editor-toolbar" role="toolbar" aria-label="掩码工具">
               <div class="tool-group" aria-label="标记工具">
-                <button class="tool-button is-active" data-tool="rectangle" type="button" title="矩形框 (R)">矩形框</button>
-                <button class="tool-button" data-tool="brush_add" type="button" title="画笔 (B)">画笔</button>
-                <button class="tool-button" data-tool="brush_erase" type="button" title="橡皮擦 (E)">橡皮擦</button>
-                <button class="tool-button" data-tool="remove_detection" type="button" title="点击删除误检框">删除自动框</button>
+                <button class="tool-button is-active" data-tool="rectangle" type="button"
+                        aria-pressed="true" title="矩形框 (R)">矩形框</button>
+                <button class="tool-button" data-tool="brush_add" type="button"
+                        aria-pressed="false" title="画笔 (B)">画笔</button>
+                <button class="tool-button" data-tool="brush_erase" type="button"
+                        aria-pressed="false" title="橡皮擦 (E)">橡皮擦</button>
+                <button class="tool-button" data-tool="remove_detection" type="button"
+                        aria-pressed="false" title="点击删除误检框">删除自动框</button>
               </div>
               <span class="toolbar-divider"></span>
               <div id="brush-control" class="brush-control" hidden>

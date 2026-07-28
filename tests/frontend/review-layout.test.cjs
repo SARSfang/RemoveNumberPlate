@@ -35,3 +35,22 @@ test("review activation refits only a hidden-layout scale", () => {
   assert.equal(review.needsRefit(0.00048, 1, 751), false);
   assert.equal(review.needsRefit(Number.NaN, 1186, 751), false);
 });
+
+test("tiny accidental rectangle drags are ignored", () => {
+  const review = loadReviewModule();
+
+  assert.equal(review.isMeaningfulRectangle({
+    type: "rectangle",
+    start: [100, 100],
+    end: [102, 140]
+  }, 1), false);
+  assert.equal(review.isMeaningfulRectangle({
+    type: "rectangle",
+    start: [100, 100],
+    end: [110, 140]
+  }, 1), true);
+  assert.equal(review.isMeaningfulRectangle({
+    type: "brush_add",
+    points: [[100, 100]]
+  }, 1), false);
+});

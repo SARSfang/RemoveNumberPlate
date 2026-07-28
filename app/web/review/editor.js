@@ -190,6 +190,25 @@
     return Number.isFinite(scale) && scale < .01 && width > 1 && height > 1;
   }
 
+  function isMeaningfulRectangle(command, scale) {
+    if (!command || command.type !== "rectangle" || !Number.isFinite(scale)) {
+      return false;
+    }
+    const width = Math.abs(command.end[0] - command.start[0]) * scale;
+    const height = Math.abs(command.end[1] - command.start[1]) * scale;
+    return width >= 3 && height >= 3;
+  }
+
+  function updateCanvasCursor() {
+    const canvas = $("#review-canvas");
+    if (state.spaceDown) {
+      canvas.style.cursor = "grab";
+    } else {
+      canvas.style.cursor =
+        state.tool === "remove_detection" ? "not-allowed" : "crosshair";
+    }
+  }
+
   function activate() {
     window.requestAnimationFrame(() => {
       const canvas = $("#review-canvas");
@@ -370,6 +389,7 @@
     const canvas = $("#review-canvas");
     canvas.addEventListener("pointerdown", (event) => {
       if (!state.current) return;
+      if (event.button !== 0 && event.button !== 1) return;
       canvas.setPointerCapture(event.pointerId);
       const point = sourcePoint(event);
       if (event.button === 1 || state.spaceDown) {
@@ -429,16 +449,29 @@
       }
       draw();
     });
-    canvas.addEventListener("pointerup", () => {
+    function finishPointer(cancelled) {
       if (!state.pointer) return;
-      if (state.pointer.type !== "pan" && state.previewCommand) {
+      const shouldCommit = (
+        !cancelled &&
+        state.pointer.type !== "pan" &&
+        state.previewCommand &&
+        (
+          state.previewCommand.type !== "rectangle" ||
+          isMeaningfulRectangle(state.previewCommand, state.view.scale)
+        )
+      );
+      if (shouldCommit) {
         commitCommand(state.previewCommand);
       }
       state.pointer = null;
       state.previewCommand = null;
-      canvas.style.cursor = state.spaceDown ? "grab" : "crosshair";
+      updateCanvasCursor();
       draw();
-    });
+    }
+    canvas.addEventListener("pointerup", () => finishPointer(false));
+    canvas.addEventListener("pointercancel", () => finishPointer(true));
+    canvas.addEventListener("lostpointercapture", () => finishPointer(true));
+    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     canvas.addEventListener("wheel", (event) => {
       if (!state.current) return;
       event.preventDefault();
@@ -464,10 +497,10 @@
         state.tool = button.dataset.tool;
         $$(".tool-button[data-tool]").forEach((value) => {
           value.classList.toggle("is-active", value === button);
+          value.setAttribute("aria-pressed", value === button ? "true" : "false");
         });
         $("#brush-control").hidden = !["brush_add", "brush_erase"].includes(state.tool);
-        $("#review-canvas").style.cursor =
-          state.tool === "remove_detection" ? "not-allowed" : "crosshair";
+        updateCanvasCursor();
       });
     });
     $("#brush-size").addEventListener("input", (event) => {
@@ -558,6 +591,7 @@
     handleEvent,
     init,
     load,
+    isMeaningfulRectangle,
     move,
     needsRefit,
     refresh,

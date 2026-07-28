@@ -7,7 +7,29 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$Python = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+$Python = $null
+$PythonCandidates = @(
+    $env:PLATE_CLEAR_PYTHON
+    (Join-Path $ProjectRoot ".venv\Scripts\python.exe")
+    (Join-Path $ProjectRoot ".venv-rc5\Scripts\python.exe")
+)
+foreach ($Candidate in $PythonCandidates) {
+    if (-not $Candidate -or -not (Test-Path -LiteralPath $Candidate)) {
+        continue
+    }
+    try {
+        & $Candidate -c `
+            "import sys; raise SystemExit(0 if (3, 11) <= sys.version_info[:2] < (3, 13) else 1)" `
+            2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $Python = $Candidate
+            break
+        }
+    }
+    catch {
+        continue
+    }
+}
 $InnoCommand = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
 $InnoCandidates = @(
     (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 7\ISCC.exe")
@@ -18,8 +40,8 @@ $InnoCompiler = $InnoCandidates |
     Where-Object { $_ -and (Test-Path -LiteralPath $_) } |
     Select-Object -First 1
 
-if (-not (Test-Path -LiteralPath $Python)) {
-    throw "Python 3.11 virtual environment is missing: $Python"
+if (-not $Python) {
+    throw "A working Python 3.11 or 3.12 release environment is missing."
 }
 if (-not (Test-Path -LiteralPath $InnoCompiler)) {
     throw "Inno Setup compiler is missing: $InnoCompiler"
