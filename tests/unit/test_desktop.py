@@ -11,7 +11,7 @@ from PIL import Image
 from app import desktop
 from app.core.job_store import JobStore
 from app.desktop import BatchService, DesktopApi, frontend_directory
-from app.domain.detection import BoundingBox, Detection
+from app.domain.detection import BoundingBox, Detection, Quadrilateral
 from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
 from app.release_readiness import ModelReadiness, StorageReadiness
@@ -50,9 +50,27 @@ class FakeManualProcessor:
 
     def process(self, source: Path, mask: np.ndarray) -> ProcessingResult:
         self.mask = mask.copy()
+        output = source.with_name(f"{source.stem}_reviewed{source.suffix}")
+        Image.open(source).save(output)
         self.finished.set()
         return ProcessingResult(
-            source.with_name(f"{source.stem}_reviewed{source.suffix}"),
+            output,
+            0.02,
+            status=JobStatus.COMPLETED,
+        )
+
+    def render_to(
+        self,
+        source: Path,
+        mask: np.ndarray,
+        output: Path,
+    ) -> ProcessingResult:
+        self.mask = mask.copy()
+        output.parent.mkdir(parents=True, exist_ok=True)
+        Image.open(source).save(output)
+        self.finished.set()
+        return ProcessingResult(
+            output,
             0.02,
             status=JobStatus.COMPLETED,
         )
@@ -340,6 +358,111 @@ def test_desktop_review_round_trip_uses_persisted_detection(tmp_path: Path) -> N
             break
         time.sleep(0.01)
     assert status is JobStatus.COMPLETED
+
+
+def test_adjustment_preview_then_save_creates_new_version(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "photo.jpg"
+    output_dir = tmp_path / "车牌已消除"
+    first_output = output_dir / "photo_clean.jpg"
+    output_dir.mkdir()
+    Image.new("RGB", (120, 80), "navy").save(source)
+    Image.new("RGB", (120, 80), "black").save(first_output)
+    original_hash = source.read_bytes()
+    old_result_hash = first_output.read_bytes()
+    polygon = Quadrilateral(((30, 30), (80, 27), (82, 48), (28, 50)))
+    detection = Detection(polygon.bounding_box, 0.8, polygon=polygon)
+    database = tmp_path / "jobs.sqlite3"
+    with JobStore(database) as store:
+        identifier = store.create_job(source)
+        store.record_result(
+            identifier,
+            ProcessingResult(
+                first_output,
+                0.1,
+                status=JobStatus.COMPLETED,
+                detection_count=1,
+                detections=(detection,),
+            ),
+        )
+    finished = threading.Event()
+    manual = FakeManualProcessor(finished)
+    events: list[tuple[str, dict[str, object]]] = []
+    api = DesktopApi(
+        lambda: FakeProcessor(),
+        lambda: manual,  # type: ignore[arg-type]
+        job_database=database,
+    )
+    api._send_event = lambda name, payload: events.append((name, payload))
+
+    adjustment = api.get_adjustment_job(identifier)
+    response = api.preview_adjustment(
+        identifier,
+        str(adjustment["revision"]),
+        [
+            {
+                "type": "set_detection_polygon",
+                "target_id": "detection:0",
+                "points": [[32, 31], [78, 28], [80, 47], [30, 49]],
+            },
+            {"type": "set_margin", "value": 0.05},
+        ],
+    )
+
+    assert adjustment["entry_available"] is True
+    assert adjustment["detections"][0]["points"][0] == [30.0, 30.0]  # type: ignore[index]
+    assert response["accepted"] is True
+    assert finished.wait(5)
+    deadline = time.monotonic() + 5
+    while not any(name == "adjustment_preview_ready" for name, _ in events):
+        assert time.monotonic() < deadline
+        time.sleep(0.01)
+    assert list(output_dir.iterdir()) == [first_output]
+    preview_payload = next(
+        payload for name, payload in events if name == "adjustment_preview_ready"
+    )
+
+    save_response = api.save_adjustment(
+        identifier,
+        str(preview_payload["preview_token"]),
+    )
+
+    assert save_response["accepted"] is True
+    deadline = time.monotonic() + 5
+    while not any(name == "adjustment_saved" for name, _ in events):
+        assert time.monotonic() < deadline
+        time.sleep(0.01)
+    second_output = output_dir / "photo_clean_2.jpg"
+    assert second_output.is_file()
+    assert source.read_bytes() == original_hash
+    assert first_output.read_bytes() == old_result_hash
+    with JobStore(database) as store:
+        saved = store.get_job(identifier)
+        assert saved.output == second_output
+        assert saved.detections == (detection,)
+        assert store.latest_mask_revision(identifier)[-1] == {
+            "type": "set_margin",
+            "value": 0.05,
+        }
+
+
+def test_every_non_processing_job_can_open_adjustment(tmp_path: Path) -> None:
+    source = tmp_path / "manual.jpg"
+    Image.new("RGB", (40, 30), "navy").save(source)
+    database = tmp_path / "jobs.sqlite3"
+    with JobStore(database) as store:
+        identifier = store.create_job(source)
+        store.record_result(
+            identifier,
+            ProcessingResult(None, 0.1, status=JobStatus.NO_PLATE),
+        )
+    api = DesktopApi(lambda: FakeProcessor(), job_database=database)
+
+    adjustment = api.get_adjustment_job(identifier)
+
+    assert adjustment["entry_available"] is True
+    assert adjustment["detections"] == []
 
 
 def test_history_can_queue_no_plate_for_manual_review(tmp_path: Path) -> None:

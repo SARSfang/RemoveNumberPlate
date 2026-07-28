@@ -393,20 +393,71 @@ class JobStore:
             )
         return revision_id
 
+    def record_adjustment_result(
+        self,
+        identifier: str,
+        output: Path,
+        commands: Sequence[Mapping[str, object]],
+        *,
+        elapsed_seconds: float,
+    ) -> str:
+        """Commit an edited result while preserving its detector evidence."""
+
+        revision_id = str(uuid4())
+        timestamp = datetime.now(UTC).isoformat()
+        with self._connection:
+            cursor = self._connection.execute(
+                """
+                UPDATE jobs
+                SET output = ?, status = ?, risks_json = '[]', error = NULL,
+                    elapsed_seconds = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    str(output),
+                    JobStatus.COMPLETED.value,
+                    elapsed_seconds,
+                    timestamp,
+                    identifier,
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise KeyError(identifier)
+            self._connection.execute(
+                """
+                INSERT INTO mask_revisions(id, job_id, commands_json, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    revision_id,
+                    identifier,
+                    json.dumps(list(commands), ensure_ascii=False),
+                    timestamp,
+                ),
+            )
+        return revision_id
+
     def latest_mask_revision(self, identifier: str) -> list[dict[str, object]]:
+        entry = self.latest_mask_revision_entry(identifier)
+        return entry[1] if entry is not None else []
+
+    def latest_mask_revision_entry(
+        self,
+        identifier: str,
+    ) -> tuple[str, list[dict[str, object]]] | None:
         row = self._connection.execute(
             """
-            SELECT commands_json FROM mask_revisions
+            SELECT id, commands_json FROM mask_revisions
             WHERE job_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1
             """,
             (identifier,),
         ).fetchone()
         if row is None:
-            return []
+            return None
         value = json.loads(str(row["commands_json"]))
         if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
             raise RuntimeError("invalid persisted mask revision")
-        return value
+        return str(row["id"]), value
 
     def counts(self) -> dict[str, int]:
         rows = self._connection.execute(

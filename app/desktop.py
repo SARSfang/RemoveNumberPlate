@@ -18,15 +18,25 @@ import webview
 
 from app.cli import build_manual_processor, build_processor
 from app.config import PRESETS, AppPaths
+from app.core.adjustment_commands import resolve_adjustment_commands
+from app.core.adjustment_session import AdjustmentSessionManager
 from app.core.batch import Processor
-from app.core.image_io import discover_images, load_image
+from app.core.image_io import (
+    allocate_output_path,
+    copy_verified_image_atomic,
+    discover_images,
+    load_image,
+)
 from app.core.job_preview import (
+    MAIN_PREVIEW_BOUNDS,
+    MAIN_PREVIEW_QUALITY,
     THUMBNAIL_BOUNDS,
     THUMBNAIL_QUALITY,
     JobPreview,
     PreviewKind,
     PreviewUnavailableReason,
     build_job_preview,
+    encode_preview,
 )
 from app.core.job_store import JobStore, prepare_job_database
 from app.core.manual_mask import build_manual_mask
@@ -48,6 +58,15 @@ SUPPORT_DOCUMENTS = {
     "troubleshooting": "troubleshooting.md",
     "privacy": "privacy.md",
 }
+ADJUSTABLE_STATUSES = frozenset(
+    {
+        JobStatus.COMPLETED,
+        JobStatus.NO_PLATE,
+        JobStatus.REVIEW_REQUIRED,
+        JobStatus.FAILED,
+        JobStatus.CANCELLED,
+    }
+)
 
 
 def frontend_directory() -> Path:
@@ -322,6 +341,10 @@ class DesktopApi:
         self._manual_processor: ManualMaskProcessor | None = None
         self._review_lock = threading.Lock()
         self._review_busy = False
+        self._adjustment_phase: str | None = None
+        self._adjustments = AdjustmentSessionManager(
+            self._job_database.parent / "adjustment-cache"
+        )
 
     @staticmethod
     def _processor_factory_for(preset: str) -> ProcessorFactory:
@@ -516,6 +539,60 @@ class DesktopApi:
             for job in jobs
         ]
 
+    def get_adjustment_job(self, identifier: str) -> dict[str, object]:
+        """Load any non-processing photo into the shared adjustment editor."""
+
+        with JobStore(self._job_database) as store:
+            job = store.get_job(identifier)
+            revision_entry = store.latest_mask_revision_entry(identifier)
+        if job.status not in ADJUSTABLE_STATUSES:
+            return {
+                "id": job.id,
+                "name": job.source.name,
+                "status": job.status.value,
+                "entry_available": False,
+                "message": "照片处理完成后即可调整区域。",
+            }
+        preview = build_job_preview(job, PreviewKind.ORIGINAL)
+        if not preview.available:
+            return {
+                "id": job.id,
+                "name": job.source.name,
+                "status": job.status.value,
+                "entry_available": False,
+                "message": preview.message,
+            }
+        revision, commands = (
+            revision_entry if revision_entry is not None else ("base", [])
+        )
+        return {
+            "id": job.id,
+            "name": job.source.name,
+            "status": job.status.value,
+            "entry_available": True,
+            "message": "",
+            "image": preview.image,
+            "width": preview.width,
+            "height": preview.height,
+            "preview_width": preview.preview_width,
+            "preview_height": preview.preview_height,
+            "revision": revision,
+            "detections": [
+                {
+                    "id": f"detection:{index}",
+                    "points": [
+                        [point[0], point[1]]
+                        for point in detection.effective_polygon.points
+                    ],
+                    "confidence": detection.confidence,
+                }
+                for index, detection in enumerate(job.detections)
+            ],
+            "commands": commands,
+            "risks": [risk.value for risk in job.risks],
+            "has_result": bool(job.output and job.output.is_file()),
+        }
+
     def get_review_job(self, identifier: str) -> dict[str, object]:
         with JobStore(self._job_database) as store:
             job = store.get_job(identifier)
@@ -535,17 +612,242 @@ class DesktopApi:
             "preview_height": preview.preview_height,
             "detections": [
                 {
+                    "id": f"detection:{index}",
                     "x1": detection.box.x1,
                     "y1": detection.box.y1,
                     "x2": detection.box.x2,
                     "y2": detection.box.y2,
                     "confidence": detection.confidence,
+                    "points": [
+                        [point[0], point[1]]
+                        for point in detection.effective_polygon.points
+                    ],
                 }
-                for detection in job.detections
+                for index, detection in enumerate(job.detections)
             ],
             "commands": commands,
             "risks": [risk.value for risk in job.risks],
         }
+
+    def preview_adjustment(
+        self,
+        identifier: str,
+        revision: str,
+        commands: list[dict[str, object]],
+    ) -> dict[str, object]:
+        """Validate and asynchronously render a temporary edited result."""
+
+        try:
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+                revision_entry = store.latest_mask_revision_entry(identifier)
+            current_revision = revision_entry[0] if revision_entry is not None else "base"
+            if revision != current_revision:
+                return {
+                    "accepted": False,
+                    "message": "这张照片已在其他操作中更新，请重新打开后再调整。",
+                }
+            if job.status not in ADJUSTABLE_STATUSES:
+                return {"accepted": False, "message": "照片处理完成后才能调整区域。"}
+            if not job.source.is_file():
+                return {"accepted": False, "message": "原照片已移动或删除。"}
+            loaded = load_image(job.source)
+            image_shape = (
+                int(loaded.pixels_rgb.shape[0]),
+                int(loaded.pixels_rgb.shape[1]),
+            )
+            resolve_adjustment_commands(image_shape, job.detections, commands)
+        except (KeyError, ValueError) as error:
+            return {"accepted": False, "message": str(error)}
+
+        with self._review_lock:
+            if self._review_busy or self._service.busy:
+                return {"accepted": False, "message": "当前有其他 AI 任务正在运行。"}
+            generation = self._adjustments.begin(identifier, revision, commands)
+            self._review_busy = True
+            self._adjustment_phase = "rendering"
+        self._send_event("adjustment_preview_started", {"job_id": identifier})
+        threading.Thread(
+            target=self._run_adjustment_preview,
+            args=(identifier, revision, commands, generation),
+            name="plate-removal-adjustment-preview",
+            daemon=True,
+        ).start()
+        return {"accepted": True, "message": ""}
+
+    def _run_adjustment_preview(
+        self,
+        identifier: str,
+        revision: str,
+        commands: list[dict[str, object]],
+        generation: str,
+    ) -> None:
+        try:
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+                revision_entry = store.latest_mask_revision_entry(identifier)
+            current_revision = revision_entry[0] if revision_entry is not None else "base"
+            if current_revision != revision:
+                raise ValueError("adjustment revision changed before rendering")
+            loaded = load_image(job.source)
+            image_shape = (
+                int(loaded.pixels_rgb.shape[0]),
+                int(loaded.pixels_rgb.shape[1]),
+            )
+            mask = build_manual_mask(image_shape, job.detections, commands)
+            processor = self._manual_processor
+            if processor is None:
+                processor = self._manual_processor_factory()
+                self._manual_processor = processor
+            cache_path = self._adjustments.cache_path(generation, job.source.suffix)
+            result = processor.render_to(job.source, mask, cache_path)
+            session = self._adjustments.complete(
+                generation,
+                cache_path,
+                width=image_shape[1],
+                height=image_shape[0],
+                elapsed_seconds=result.elapsed_seconds,
+            )
+            if session is None:
+                return
+            preview = encode_preview(
+                cache_path,
+                variant=PreviewKind.RESULT,
+                bounds=MAIN_PREVIEW_BOUNDS,
+                quality=MAIN_PREVIEW_QUALITY,
+            )
+            if not preview.available:
+                raise ValueError(preview.message)
+            self._send_event(
+                "adjustment_preview_ready",
+                {
+                    "job_id": identifier,
+                    "preview_token": session.preview_token,
+                    "image": preview.image,
+                    "width": preview.width,
+                    "height": preview.height,
+                    "preview_width": preview.preview_width,
+                    "preview_height": preview.preview_height,
+                    "elapsed": round(result.elapsed_seconds, 3),
+                },
+            )
+        except Exception as error:
+            LOGGER.exception("Adjustment preview failed for job %s", identifier)
+            if self._adjustments.cancel(identifier):
+                self._send_event(
+                    "adjustment_preview_failed",
+                    {
+                        "job_id": identifier,
+                        "message": f"{type(error).__name__}: {error}",
+                    },
+                )
+        finally:
+            with self._review_lock:
+                self._review_busy = False
+                self._adjustment_phase = None
+
+    def save_adjustment(
+        self,
+        identifier: str,
+        preview_token: str,
+    ) -> dict[str, object]:
+        """Commit a validated cache as a new versioned output."""
+
+        try:
+            session = self._adjustments.get(identifier, preview_token)
+            with JobStore(self._job_database) as store:
+                store.get_job(identifier)
+                revision_entry = store.latest_mask_revision_entry(identifier)
+            current_revision = revision_entry[0] if revision_entry is not None else "base"
+            if current_revision != session.revision:
+                return {
+                    "accepted": False,
+                    "message": "这张照片已更新，当前临时预览不能再保存。",
+                }
+        except (KeyError, ValueError) as error:
+            return {"accepted": False, "message": str(error)}
+
+        with self._review_lock:
+            if self._review_busy or self._service.busy:
+                return {"accepted": False, "message": "当前有其他任务正在运行。"}
+            self._review_busy = True
+            self._adjustment_phase = "saving"
+        self._send_event("adjustment_save_started", {"job_id": identifier})
+        threading.Thread(
+            target=self._run_adjustment_save,
+            args=(identifier, preview_token),
+            name="plate-removal-adjustment-save",
+            daemon=True,
+        ).start()
+        return {"accepted": True, "message": ""}
+
+    def _run_adjustment_save(
+        self,
+        identifier: str,
+        preview_token: str,
+    ) -> None:
+        output: Path | None = None
+        committed = False
+        try:
+            session = self._adjustments.get(identifier, preview_token)
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+                revision_entry = store.latest_mask_revision_entry(identifier)
+                current_revision = (
+                    revision_entry[0] if revision_entry is not None else "base"
+                )
+                if current_revision != session.revision:
+                    raise ValueError("adjustment revision changed before saving")
+                while True:
+                    output = allocate_output_path(job.source)
+                    try:
+                        copy_verified_image_atomic(session.cache_path, output)
+                        break
+                    except FileExistsError:
+                        continue
+                store.record_adjustment_result(
+                    identifier,
+                    output,
+                    session.commands,
+                    elapsed_seconds=session.elapsed_seconds,
+                )
+                committed = True
+            self._adjustments.finish(preview_token)
+            self._send_event(
+                "adjustment_saved",
+                {
+                    "job_id": identifier,
+                    "status": JobStatus.COMPLETED.value,
+                    "output_name": output.name,
+                    "elapsed": round(session.elapsed_seconds, 3),
+                },
+            )
+            self._send_event("history_changed", {})
+        except Exception as error:
+            if output is not None and output.is_file() and not committed:
+                output.unlink(missing_ok=True)
+            LOGGER.exception("Adjustment save failed for job %s", identifier)
+            self._send_event(
+                "adjustment_save_failed",
+                {
+                    "job_id": identifier,
+                    "message": f"{type(error).__name__}: {error}",
+                },
+            )
+        finally:
+            with self._review_lock:
+                self._review_busy = False
+                self._adjustment_phase = None
+
+    def cancel_adjustment(self, identifier: str) -> dict[str, object]:
+        with self._review_lock:
+            if self._adjustment_phase == "saving":
+                return {
+                    "accepted": False,
+                    "message": "正在保存新结果，请稍候。",
+                }
+            cancelled = self._adjustments.cancel(identifier)
+        return {"accepted": True, "cancelled": cancelled, "message": ""}
 
     def reprocess_review(
         self,
@@ -575,7 +877,6 @@ class DesktopApi:
                 job = store.get_job(identifier)
                 if job.status is not JobStatus.REVIEW_REQUIRED:
                     raise ValueError("job is not awaiting review")
-                store.record_mask_revision(identifier, commands)
                 loaded = load_image(job.source)
                 mask = build_manual_mask(
                     (
@@ -590,7 +891,14 @@ class DesktopApi:
                     processor = self._manual_processor_factory()
                     self._manual_processor = processor
                 result = processor.process(job.source, mask)
-                store.record_result(identifier, result)
+                if result.output is None:
+                    raise ValueError("manual processing did not create an output")
+                store.record_adjustment_result(
+                    identifier,
+                    result.output,
+                    commands,
+                    elapsed_seconds=result.elapsed_seconds,
+                )
             self._send_event(
                 "review_finished",
                 {

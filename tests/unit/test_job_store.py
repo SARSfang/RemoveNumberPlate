@@ -60,6 +60,49 @@ def test_job_store_round_trips_latest_mask_revision(tmp_path: Path) -> None:
         assert store.latest_mask_revision(identifier) == second
 
 
+def test_adjustment_result_preserves_detections_and_old_output(tmp_path: Path) -> None:
+    source = tmp_path / "source.jpg"
+    first_output = tmp_path / "source_clean.jpg"
+    second_output = tmp_path / "source_clean_2.jpg"
+    detection = Detection(
+        Quadrilateral(((10, 20), (100, 18), (98, 50), (12, 52))).bounding_box,
+        0.8,
+        polygon=Quadrilateral(((10, 20), (100, 18), (98, 50), (12, 52))),
+    )
+    first_output.write_bytes(b"old")
+    second_output.write_bytes(b"new")
+    with JobStore(tmp_path / "jobs.sqlite3") as store:
+        identifier = store.create_job(source)
+        store.record_result(
+            identifier,
+            ProcessingResult(
+                first_output,
+                1,
+                status=JobStatus.COMPLETED,
+                detections=(detection,),
+                detection_count=1,
+            ),
+        )
+
+        revision = store.record_adjustment_result(
+            identifier,
+            second_output,
+            [{"type": "set_margin", "value": 0.08}],
+            elapsed_seconds=2,
+        )
+        job = store.get_job(identifier)
+        revision_entry = store.latest_mask_revision_entry(identifier)
+
+    assert first_output.read_bytes() == b"old"
+    assert job.output == second_output
+    assert job.detections == (detection,)
+    assert job.status is JobStatus.COMPLETED
+    assert revision_entry == (
+        revision,
+        [{"type": "set_margin", "value": 0.08}],
+    )
+
+
 def test_job_store_migrates_v1_database_without_losing_jobs(tmp_path: Path) -> None:
     database = tmp_path / "jobs.sqlite3"
     connection = sqlite3.connect(database)
