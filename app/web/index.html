@@ -118,6 +118,8 @@
                   <button id="restore-follow-button" class="button button-compact" type="button" hidden>
                     恢复跟随
                   </button>
+                  <button id="adjust-region-button" class="button button-compact button-accent" type="button"
+                          disabled title="处理完成后可调整">调整区域</button>
                   <button id="details-toggle" class="button button-compact" type="button"
                           aria-expanded="false" aria-controls="job-inspector">详情</button>
                 </div>
@@ -210,11 +212,11 @@
       <section id="page-review" class="page page-standard" aria-labelledby="review-title">
         <header class="page-heading">
           <div>
-            <p class="eyebrow">异常照片收件箱</p>
+            <p id="review-eyebrow" class="eyebrow">异常照片收件箱</p>
             <h1 id="review-title" tabindex="-1">待复核</h1>
-            <p>集中处理低置信度、贴边和异常检测。</p>
+            <p id="review-description">集中处理低置信度、贴边和异常检测。</p>
           </div>
-          <span class="privacy-note">原图尚未修改</span>
+          <span id="review-privacy-note" class="privacy-note">原图尚未修改</span>
         </header>
         <div id="review-empty" class="empty-state">
           <div class="empty-icon"><img src="assets/icons/shield-check.svg" alt=""></div>
@@ -225,21 +227,23 @@
         <div id="review-workspace" class="review-workspace" hidden>
           <aside class="review-sidebar" aria-label="待复核照片">
             <div class="review-sidebar-heading">
-              <span>待处理</span><strong id="review-queue-count">0</strong>
+              <span id="review-sidebar-label">待处理</span><strong id="review-queue-count">0</strong>
             </div>
             <div id="review-list" class="review-list"></div>
           </aside>
           <section class="editor-panel" aria-label="人工掩码编辑器">
             <div class="editor-toolbar" role="toolbar" aria-label="掩码工具">
               <div class="tool-group" aria-label="标记工具">
-                <button class="tool-button is-active" data-tool="rectangle" type="button"
-                        aria-pressed="true" title="矩形框 (R)">矩形框</button>
+                <button class="tool-button is-active" data-tool="polygon" type="button"
+                        aria-pressed="true" title="拖动四个角点">四点框</button>
+                <button class="tool-button" data-tool="add_polygon" type="button"
+                        aria-pressed="false" title="点击照片新增车牌框">新增车牌框</button>
                 <button class="tool-button" data-tool="brush_add" type="button"
                         aria-pressed="false" title="画笔 (B)">画笔</button>
                 <button class="tool-button" data-tool="brush_erase" type="button"
                         aria-pressed="false" title="橡皮擦 (E)">橡皮擦</button>
                 <button class="tool-button" data-tool="remove_detection" type="button"
-                        aria-pressed="false" title="点击删除误检框">删除自动框</button>
+                        aria-pressed="false" title="点击删除车牌框">删除车牌框</button>
               </div>
               <span class="toolbar-divider"></span>
               <div id="brush-control" class="brush-control" hidden>
@@ -251,6 +255,10 @@
                 <button id="redo-button" class="tool-button" type="button" title="重做 (Ctrl+Y)" disabled>重做</button>
                 <button id="restore-button" class="tool-button" type="button">恢复自动框</button>
               </div>
+              <label class="margin-control" for="mask-margin">边缘
+                <input id="mask-margin" type="range" min="-15" max="35" step="1" value="8">
+                <span id="mask-margin-value">+8%</span>
+              </label>
               <label class="mask-opacity-control" for="mask-opacity">遮罩
                 <input id="mask-opacity" type="range" min="15" max="70" value="36">
               </label>
@@ -258,6 +266,12 @@
             <div id="canvas-stage" class="canvas-stage">
               <canvas id="review-canvas" tabindex="0" aria-label="待复核照片与车牌掩码"></canvas>
               <div id="canvas-loading" class="canvas-loading">正在载入预览…</div>
+              <div class="editor-view-tabs" role="tablist" aria-label="编辑器视图">
+                <button id="editor-mask-tab" class="preview-tab is-active" type="button"
+                        aria-selected="true">原图与区域</button>
+                <button id="editor-result-tab" class="preview-tab" type="button"
+                        aria-selected="false" disabled>临时结果</button>
+              </div>
             </div>
             <div class="editor-footer">
               <div class="editor-file">
@@ -267,7 +281,10 @@
               <button id="previous-review-button" class="button button-secondary" type="button">上一张</button>
               <button id="next-review-button" class="button button-secondary" type="button">下一张</button>
               <button id="skip-review-button" class="button button-quiet" type="button">跳过此图</button>
-              <button id="confirm-review-button" class="button button-primary" type="button">确认并重修</button>
+              <button id="cancel-adjustment-button" class="button button-quiet" type="button">取消并返回</button>
+              <button id="continue-adjustment-button" class="button button-secondary" type="button" hidden>继续调整</button>
+              <button id="save-adjustment-button" class="button button-primary" type="button" hidden>保存新结果</button>
+              <button id="confirm-review-button" class="button button-primary" type="button">生成临时预览</button>
             </div>
           </section>
         </div>

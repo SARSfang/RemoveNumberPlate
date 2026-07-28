@@ -27,6 +27,13 @@
     inpaint_failed: "修复失败",
     write_failed: "写入失败"
   };
+  const ADJUSTABLE_STATUSES = new Set([
+    "completed",
+    "review_required",
+    "no_plate",
+    "failed",
+    "cancelled"
+  ]);
   let detailsRestoreFocus = null;
 
   function jobById(identifier) {
@@ -84,6 +91,8 @@
       $("#inspector-risks").textContent = "—";
       $("#inspector-output-name").textContent = "结果尚未生成";
       $("#open-job-output-button").disabled = true;
+      $("#adjust-region-button").disabled = true;
+      $("#adjust-region-button").title = "请先选择照片";
       return;
     }
     updateInspectorThumbnail(job);
@@ -112,6 +121,11 @@
       ? outputName(job.name)
       : "结果尚未生成";
     $("#open-job-output-button").disabled = !job.output_available;
+    const canAdjust = ADJUSTABLE_STATUSES.has(job.status);
+    $("#adjust-region-button").disabled = !canAdjust;
+    $("#adjust-region-button").title = canAdjust
+      ? "调整这张照片的消除区域"
+      : "处理完成后可调整";
     $("#inspector-review-button").disabled = job.status !== "review_required";
     $("#inspector-retry-button").disabled = !["queued", "failed", "cancelled"].includes(job.status);
   }
@@ -329,6 +343,13 @@
     $("#restore-follow-button").addEventListener("click", restoreFollowing);
     $("#details-toggle").addEventListener("click", () => setDetailsOpen(true));
     $("#details-close-button").addEventListener("click", () => setDetailsOpen(false));
+    $("#adjust-region-button").addEventListener("click", async () => {
+      const identifier = PlateApp.store.get().selectedId;
+      if (!identifier) return;
+      const navigated = await PlateApp.navigate("review");
+      if (!navigated) return;
+      await PlateApp.review.openSingle(identifier);
+    });
     window.addEventListener("keydown", (event) => {
       if (
         event.key === "Escape" &&

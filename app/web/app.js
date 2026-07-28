@@ -55,7 +55,7 @@
   function receiveBackendEvent(event) {
     PlateApp.batch.receiveBackendEvent(event);
     PlateApp.review.handleEvent(event);
-    if (event.name === "review_finished") {
+    if (event.name === "review_finished" || event.name === "adjustment_saved") {
       patchReviewedJob(event.payload.job_id, {
         status: "completed",
         output_available: true,

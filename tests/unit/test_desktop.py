@@ -87,10 +87,13 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     assert 'aria-label="拖放照片或文件夹"' in markup
     assert "Content-Security-Policy" in markup
     assert "connect-src 'none'" in markup
-    assert 'data-tool="rectangle"' in markup
+    assert 'data-tool="polygon"' in markup
+    assert 'data-tool="add_polygon"' in markup
     assert 'data-tool="brush_add"' in markup
     assert 'data-tool="brush_erase"' in markup
-    assert "确认并重修" in markup
+    assert "生成临时预览" in markup
+    assert 'id="adjust-region-button"' in markup
+    assert 'id="save-adjustment-button"' in markup
     assert 'data-document="privacy"' in markup
     assert 'role="tablist"' in markup
     assert 'role="listbox"' in markup
@@ -463,6 +466,7 @@ def test_every_non_processing_job_can_open_adjustment(tmp_path: Path) -> None:
 
     assert adjustment["entry_available"] is True
     assert adjustment["detections"] == []
+    assert api.get_adjustment_job(str(source))["entry_available"] is False
 
 
 def test_history_can_queue_no_plate_for_manual_review(tmp_path: Path) -> None:

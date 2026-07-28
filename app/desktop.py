@@ -542,9 +542,18 @@ class DesktopApi:
     def get_adjustment_job(self, identifier: str) -> dict[str, object]:
         """Load any non-processing photo into the shared adjustment editor."""
 
-        with JobStore(self._job_database) as store:
-            job = store.get_job(identifier)
-            revision_entry = store.latest_mask_revision_entry(identifier)
+        try:
+            with JobStore(self._job_database) as store:
+                job = store.get_job(identifier)
+                revision_entry = store.latest_mask_revision_entry(identifier)
+        except KeyError:
+            return {
+                "id": "",
+                "name": "",
+                "status": "",
+                "entry_available": False,
+                "message": "找不到这张照片。",
+            }
         if job.status not in ADJUSTABLE_STATUSES:
             return {
                 "id": job.id,

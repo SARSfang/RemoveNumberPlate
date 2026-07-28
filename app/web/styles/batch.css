@@ -179,6 +179,15 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
+#adjust-region-button {
+  white-space: nowrap;
+}
+
+#adjust-region-button:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  color: var(--accent-hover);
+}
+
 .preview-tabs {
   display: flex;
 }

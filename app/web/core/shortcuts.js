@@ -66,9 +66,10 @@
     } else if (event.ctrlKey && event.key.toLowerCase() === "y") {
       event.preventDefault();
       $("#redo-button").click();
-    } else if (!event.ctrlKey && ["r", "b", "e"].includes(event.key.toLowerCase())) {
+    } else if (!event.ctrlKey && ["r", "a", "b", "e"].includes(event.key.toLowerCase())) {
       const tool = {
-        r: "rectangle",
+        r: "polygon",
+        a: "add_polygon",
         b: "brush_add",
         e: "brush_erase"
       }[event.key.toLowerCase()];
@@ -103,7 +104,7 @@
       $("#review-canvas").style.cursor =
         PlateApp.review.state.tool === "remove_detection"
           ? "not-allowed"
-          : "crosshair";
+          : PlateApp.review.state.tool === "polygon" ? "default" : "crosshair";
     });
   }
 

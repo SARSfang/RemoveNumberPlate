@@ -154,6 +154,26 @@
   font-size: var(--font-xs);
 }
 
+.margin-control {
+  align-items: center;
+  color: var(--text-muted);
+  display: flex;
+  font-size: 12px;
+  gap: 7px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.margin-control input {
+  width: 108px;
+}
+
+.margin-control span {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  min-width: 38px;
+}
+
 .brush-control input {
   width: 90px;
 }
@@ -181,6 +201,40 @@
   display: block;
   cursor: crosshair;
   touch-action: none;
+}
+
+.editor-view-tabs {
+  background: rgba(8, 12, 19, .82);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  display: flex;
+  left: 14px;
+  padding: 3px;
+  position: absolute;
+  top: 14px;
+  z-index: 3;
+}
+
+.editor-view-tabs .preview-tab {
+  min-height: 30px;
+}
+
+#cancel-adjustment-button {
+  display: none;
+}
+
+.review-workspace.is-single .review-sidebar {
+  width: 190px;
+}
+
+.review-workspace.is-single #previous-review-button,
+.review-workspace.is-single #next-review-button,
+.review-workspace.is-single #skip-review-button {
+  display: none;
+}
+
+.review-workspace.is-single #cancel-adjustment-button {
+  display: inline-flex;
 }
 
 .canvas-loading {

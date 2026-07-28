@@ -111,6 +111,62 @@
         commands: []
       };
     },
+    async get_adjustment_job(identifier) {
+      const item = jobs.find((value) => value.id === identifier) ||
+        reviewJobs.find((value) => value.id === identifier);
+      if (!item) throw new Error("照片不存在");
+      return {
+        ...item,
+        entry_available: true,
+        message: "",
+        image: "/__preview__/source.jpg",
+        width: 1920,
+        height: 1280,
+        preview_width: 1600,
+        preview_height: 1067,
+        revision: "base",
+        has_result: Boolean(item.output_available),
+        detections: [{
+          id: "detection:0",
+          points: [[590, 895], [762, 887], [770, 956], [584, 963]],
+          confidence: .72
+        }],
+        commands: [],
+        risks: item.risks || []
+      };
+    },
+    async preview_adjustment(identifier) {
+      dispatch("adjustment_preview_started", { job_id: identifier });
+      window.setTimeout(() => {
+        dispatch("adjustment_preview_ready", {
+          job_id: identifier,
+          preview_token: "preview-token",
+          image: "/__preview__/result.jpg",
+          width: 1920,
+          height: 1280,
+          preview_width: 1600,
+          preview_height: 1067,
+          elapsed: 2.43
+        });
+      }, 600);
+      return { accepted: true, message: "" };
+    },
+    async save_adjustment(identifier) {
+      dispatch("adjustment_save_started", { job_id: identifier });
+      window.setTimeout(() => {
+        dispatch("adjustment_saved", {
+          job_id: identifier,
+          status: "completed",
+          output_name: "IMG_0523_clean_2.JPG",
+          elapsed: 2.43
+        });
+        dispatch("history_changed", {});
+      }, 250);
+      return { accepted: true, message: "" };
+    },
+    async cancel_adjustment() {
+      return { accepted: true, cancelled: true, message: "" };
+    },
     async reprocess_review(identifier) {
       dispatch("review_started", { job_id: identifier });
       window.setTimeout(() => {
