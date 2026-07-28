@@ -1,6 +1,24 @@
+#page-review.page-standard.is-active {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#page-review .page-heading {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+#page-review .empty-state {
+  width: 100%;
+  flex: 1;
+}
+
 .review-workspace {
-  height: calc(100vh - var(--topbar-height) - 128px);
-  min-height: 520px;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 1;
   max-width: 1440px;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -76,8 +94,10 @@
 
 .editor-panel {
   min-width: 0;
+  min-height: 0;
   display: grid;
   grid-template-rows: 54px minmax(0, 1fr) 64px;
+  overflow: hidden;
 }
 
 .editor-toolbar {
@@ -156,6 +176,8 @@
 #review-canvas {
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: block;
   cursor: crosshair;
   touch-action: none;

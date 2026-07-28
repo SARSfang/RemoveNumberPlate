@@ -57,9 +57,12 @@
 }
 
 .empty-lead {
+  max-width: 680px;
   margin-top: 7px;
   color: var(--text-muted);
   font-size: var(--font-lg);
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .drop-actions {

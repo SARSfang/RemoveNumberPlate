@@ -15,8 +15,12 @@
     maskOpacity: .36,
     view: { scale: 1, x: 0, y: 0 },
     pointer: null,
-    spaceDown: false
+    spaceDown: false,
+    dirty: false,
+    loadingId: null
   };
+  let loadSerial = 0;
+  let refreshSerial = 0;
 
   function updateBadge() {
     const badge = $("#review-badge");
@@ -52,16 +56,26 @@
       card.addEventListener("click", () => load(item.id));
       list.appendChild(card);
     });
-    if (!state.current) load(state.items[0].id);
+    if (!state.current && !state.loadingId) load(state.items[0].id);
   }
 
   async function refresh() {
     if (!PlateApp.bridge.api() || !PlateApp.bridge.api().list_review_jobs) return;
-    state.items = await PlateApp.bridge.call("list_review_jobs");
-    if (state.current && !state.items.some((item) => item.id === state.current.id)) {
-      state.current = null;
+    const serial = ++refreshSerial;
+    try {
+      const items = await PlateApp.bridge.call("list_review_jobs");
+      if (serial !== refreshSerial) return;
+      state.items = items;
+      if (state.current && !state.items.some((item) => item.id === state.current.id)) {
+        state.current = null;
+        state.dirty = false;
+      }
+      render();
+      activate();
+    } catch (error) {
+      if (serial !== refreshSerial) return;
+      PlateApp.toast.show(`无法刷新待复核列表：${error.message || error}`);
     }
-    render();
   }
 
   function riskDescription(risks) {
@@ -76,30 +90,72 @@
     return `${values.join(" · ") || "检测存在风险"}，原图尚未修改`;
   }
 
-  async function load(identifier) {
+  async function confirmDiscard() {
+    if (!state.dirty) return true;
+    return PlateApp.dialog.confirm({
+      title: "放弃未提交的编辑？",
+      description: "当前遮罩调整尚未重修，离开后这些调整不会保留。",
+      confirmLabel: "放弃编辑"
+    });
+  }
+
+  function discardEdits() {
+    loadSerial += 1;
+    state.current = null;
+    state.image = null;
+    state.commands = [];
+    state.redoCommands = [];
+    state.previewCommand = null;
+    state.pointer = null;
+    state.dirty = false;
+    state.loadingId = null;
+    $("#canvas-loading").hidden = true;
+  }
+
+  async function load(identifier, options) {
+    if (!identifier || state.loadingId === identifier) return;
+    if (
+      state.current &&
+      state.current.id !== identifier &&
+      !(options && options.force) &&
+      !await confirmDiscard()
+    ) {
+      return;
+    }
+    const serial = ++loadSerial;
+    state.loadingId = identifier;
     $("#canvas-loading").hidden = false;
     try {
       const review = await PlateApp.bridge.call("get_review_job", identifier);
+      if (serial !== loadSerial) return;
       const image = new Image();
       await new Promise((resolve, reject) => {
         image.onload = resolve;
         image.onerror = reject;
         image.src = review.image;
       });
+      if (serial !== loadSerial) return;
       state.current = review;
       state.image = image;
       state.commands = Array.isArray(review.commands) ? review.commands : [];
       state.redoCommands = [];
       state.previewCommand = null;
+      state.dirty = false;
       $("#review-file-name").textContent = review.name;
       $("#review-risk-text").textContent = riskDescription(review.risks);
-      fitImage();
       updateEditorButtons();
       render();
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      if (serial !== loadSerial) return;
+      fitImage();
     } catch (error) {
+      if (serial !== loadSerial) return;
       PlateApp.toast.show(`无法载入复核照片：${error.message || error}`);
     } finally {
-      $("#canvas-loading").hidden = true;
+      if (serial === loadSerial) {
+        state.loadingId = null;
+        $("#canvas-loading").hidden = true;
+      }
     }
   }
 
@@ -128,6 +184,22 @@
     state.view.x = (width - state.current.width * state.view.scale) / 2;
     state.view.y = (height - state.current.height * state.view.scale) / 2;
     draw();
+  }
+
+  function needsRefit(scale, width, height) {
+    return Number.isFinite(scale) && scale < .01 && width > 1 && height > 1;
+  }
+
+  function activate() {
+    window.requestAnimationFrame(() => {
+      const canvas = $("#review-canvas");
+      if (
+        state.current &&
+        needsRefit(state.view.scale, canvas.clientWidth, canvas.clientHeight)
+      ) {
+        fitImage();
+      }
+    });
   }
 
   function sourcePoint(event) {
@@ -227,6 +299,7 @@
     state.commands.push(command);
     state.redoCommands = [];
     state.previewCommand = null;
+    state.dirty = true;
     updateEditorButtons();
     draw();
   }
@@ -246,16 +319,18 @@
     );
   }
 
-  function move(direction) {
+  async function move(direction) {
     if (!state.current || state.items.length < 2) return;
     const index = state.items.findIndex((item) => item.id === state.current.id);
     const next = (index + direction + state.items.length) % state.items.length;
-    load(state.items[next].id);
+    await load(state.items[next].id);
   }
 
   function removeCurrent(identifier) {
     state.items = state.items.filter((item) => item.id !== identifier);
     state.current = null;
+    state.dirty = false;
+    state.loadingId = null;
     render();
   }
 
@@ -406,32 +481,70 @@
     $("#undo-button").addEventListener("click", () => {
       if (!state.commands.length) return;
       state.redoCommands.push(state.commands.pop());
+      state.dirty = true;
       updateEditorButtons();
       draw();
     });
     $("#redo-button").addEventListener("click", () => {
       if (!state.redoCommands.length) return;
       state.commands.push(state.redoCommands.pop());
+      state.dirty = true;
       updateEditorButtons();
       draw();
     });
     $("#restore-button").addEventListener("click", () => {
       state.redoCommands = [...state.commands].reverse();
       state.commands = [];
+      state.dirty = true;
       updateEditorButtons();
       draw();
     });
     $("#confirm-review-button").addEventListener("click", async () => {
       if (!state.current) return;
-      const response = await PlateApp.bridge.call(
-        "reprocess_review",
-        state.current.id,
-        state.commands
-      );
-      if (!response.accepted) PlateApp.toast.show(response.message);
+      const confirmButton = $("#confirm-review-button");
+      const skipButton = $("#skip-review-button");
+      confirmButton.disabled = true;
+      skipButton.disabled = true;
+      try {
+        const response = await PlateApp.bridge.call(
+          "reprocess_review",
+          state.current.id,
+          state.commands
+        );
+        if (!response.accepted) {
+          PlateApp.toast.show(response.message);
+          confirmButton.disabled = false;
+          skipButton.disabled = false;
+        }
+      } catch (error) {
+        confirmButton.disabled = false;
+        skipButton.disabled = false;
+        PlateApp.toast.show(`无法开始重修：${error.message || error}`);
+      }
     });
     $("#skip-review-button").addEventListener("click", async () => {
-      if (state.current) await PlateApp.bridge.call("skip_review", state.current.id);
+      if (!state.current) return;
+      if (state.dirty) {
+        const accepted = await PlateApp.dialog.confirm({
+          title: "跳过并放弃编辑？",
+          description: "当前遮罩调整不会保留，原片仍保持不变。",
+          confirmLabel: "跳过此图"
+        });
+        if (!accepted) return;
+      }
+      const identifier = state.current.id;
+      const button = $("#skip-review-button");
+      button.disabled = true;
+      try {
+        const accepted = await PlateApp.bridge.call("skip_review", identifier);
+        if (!accepted) {
+          button.disabled = false;
+          PlateApp.toast.show("未能跳过此图，请重试。");
+        }
+      } catch (error) {
+        button.disabled = false;
+        PlateApp.toast.show(`无法跳过此图：${error.message || error}`);
+      }
     });
     $("#previous-review-button").addEventListener("click", () => move(-1));
     $("#next-review-button").addEventListener("click", () => move(1));
@@ -439,12 +552,16 @@
   }
 
   PlateApp.review = {
+    activate,
     draw,
+    discardEdits,
     handleEvent,
     init,
     load,
     move,
+    needsRefit,
     refresh,
+    confirmDiscard,
     state
   };
 })();

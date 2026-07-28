@@ -1,6 +1,8 @@
 (function () {
   "use strict";
   const requestedCount = Number(new URLSearchParams(window.location.search).get("count"));
+  const includeReview = new URLSearchParams(window.location.search).get("review") === "1";
+  const startupMode = new URLSearchParams(window.location.search).get("startup");
   const jobCount = Math.max(1, Math.min(500, requestedCount || 10));
   const jobs = Array.from({ length: jobCount }, (_, index) => ({
     id: `preview-${index + 1}`,
@@ -12,6 +14,12 @@
     risks: [],
     output_available: index < 2
   }));
+  const reviewJobs = includeReview ? [{
+    id: "review-preview-1",
+    name: "IMG_0525.JPG",
+    risks: ["low_confidence", "touches_edge"],
+    detection_count: 1
+  }] : [];
 
   function dispatch(name, payload) {
     window.app.receiveBackendEvent({ name, payload });
@@ -19,12 +27,17 @@
 
   const api = {
     async bootstrap() {
+      if (startupMode === "failed") {
+        throw new Error("无法读取本地运行环境");
+      }
       return {
         version: "v0.2.0-rc.5 · 视觉预览",
         gpu: "NVIDIA GeForce RTX 4070",
         runtime: "轻量 ONNX Runtime · 本地离线处理",
-        models_ready: true,
-        model_issue: "",
+        models_ready: startupMode !== "models",
+        model_issue: startupMode === "models"
+          ? "模型文件不完整，请重新安装完整版本。"
+          : "",
         webview2_version: "138.0",
         preset: "balanced",
         history_counts: { completed: 2, review_required: 0 },
@@ -34,6 +47,7 @@
       };
     },
     async frontend_ready() {
+      if (startupMode === "models") return true;
       window.setTimeout(() => {
         dispatch("batch_accepted", {});
         dispatch("batch_discovered", { total: jobs.length });
@@ -75,7 +89,42 @@
       return true;
     },
     async list_review_jobs() {
-      return [];
+      return reviewJobs;
+    },
+    async get_review_job(identifier) {
+      const item = reviewJobs.find((value) => value.id === identifier);
+      if (!item) throw new Error("复核照片不存在");
+      return {
+        ...item,
+        image: "/__preview__/source.jpg",
+        width: 1920,
+        height: 1280,
+        preview_width: 1600,
+        preview_height: 1067,
+        detections: [{
+          x1: 590,
+          y1: 895,
+          x2: 760,
+          y2: 955,
+          confidence: .72
+        }],
+        commands: []
+      };
+    },
+    async reprocess_review(identifier) {
+      dispatch("review_started", { job_id: identifier });
+      window.setTimeout(() => {
+        dispatch("review_finished", {
+          job_id: identifier,
+          status: "completed",
+          elapsed: 2.43
+        });
+      }, 700);
+      return { accepted: true, message: "" };
+    },
+    async skip_review(identifier) {
+      window.setTimeout(() => dispatch("review_skipped", { job_id: identifier }), 80);
+      return true;
     },
     async list_history() {
       return jobs.slice(0, 2).map((job) => ({

@@ -3,6 +3,7 @@
   const PlateApp = window.PlateApp = window.PlateApp || {};
   const $ = (selector) => document.querySelector(selector);
   const state = { jobs: [], selectedId: null };
+  let refreshSerial = 0;
 
   const LABELS = {
     queued: "排队中",
@@ -44,10 +45,27 @@
     return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("zh-CN");
   }
 
-  function showDetail(job) {
-    state.selectedId = job.id;
+  function renderDetail(job) {
     const detail = $("#history-detail");
     detail.replaceChildren();
+    if (!job) {
+      const empty = document.createElement("div");
+      empty.className = "empty-detail";
+      const icon = document.createElement("img");
+      icon.src = "assets/icons/panel-right.svg";
+      icon.alt = "";
+      const title = document.createElement("strong");
+      title.textContent = state.jobs.length
+        ? "选择一条任务"
+        : "暂无任务记录";
+      const description = document.createElement("span");
+      description.textContent = state.jobs.length
+        ? "在这里查看状态、风险和输出。"
+        : "完成处理后，记录会安全地保存在本机。";
+      empty.append(icon, title, description);
+      detail.appendChild(empty);
+      return;
+    }
     const title = document.createElement("h2");
     title.textContent = job.name;
     const status = document.createElement("span");
@@ -71,33 +89,54 @@
       facts.appendChild(row);
     });
     detail.append(title, status, facts);
+  }
+
+  function showDetail(job) {
+    state.selectedId = job.id;
     render();
   }
 
   async function openOutput(job) {
-    if (!await PlateApp.bridge.call("open_job_output", job.id)) {
+    try {
+      if (await PlateApp.bridge.call("open_job_output", job.id)) return;
       PlateApp.toast.show("输出文件夹暂不可用。");
+    } catch (error) {
+      PlateApp.toast.show(`无法打开输出文件夹：${error.message || error}`);
     }
   }
 
   async function queueReview(job) {
-    const response = await PlateApp.bridge.call("queue_for_manual_review", job.id);
-    PlateApp.toast.show(response.message);
-    if (response.accepted) {
-      await PlateApp.review.refresh();
-      await refresh();
-      PlateApp.navigate("review");
+    try {
+      const response = await PlateApp.bridge.call("queue_for_manual_review", job.id);
+      PlateApp.toast.show(response.message);
+      if (response.accepted) {
+        await PlateApp.review.refresh();
+        await refresh();
+        PlateApp.navigate("review");
+      }
+    } catch (error) {
+      PlateApp.toast.show(`无法加入待复核：${error.message || error}`);
     }
   }
 
   async function retry(job) {
-    const response = await PlateApp.bridge.call("retry_job", job.id);
-    PlateApp.toast.show(response.message);
-    if (response.accepted) PlateApp.navigate("batch");
+    try {
+      const response = await PlateApp.bridge.call("retry_job", job.id);
+      PlateApp.toast.show(response.message);
+      if (response.accepted) PlateApp.navigate("batch");
+    } catch (error) {
+      PlateApp.toast.show(`无法重新处理：${error.message || error}`);
+    }
   }
 
   function render() {
     const jobs = visibleJobs();
+    if (state.selectedId && !jobs.some((job) => job.id === state.selectedId)) {
+      state.selectedId = null;
+    }
+    if (!state.selectedId && jobs.length) {
+      state.selectedId = jobs[0].id;
+    }
     const rows = $("#history-rows");
     rows.replaceChildren();
     $("#history-total").textContent = state.jobs.length;
@@ -111,6 +150,7 @@
         : "还没有本机任务记录。";
       row.appendChild(cell);
       rows.appendChild(row);
+      renderDetail(null);
       return;
     }
     jobs.forEach((job) => {
@@ -155,15 +195,36 @@
       row.append(name, statusCell, updated, actions);
       rows.appendChild(row);
     });
+    renderDetail(state.jobs.find((job) => job.id === state.selectedId) || null);
   }
 
   async function refresh() {
     if (!PlateApp.bridge.api() || !PlateApp.bridge.api().list_history) return;
-    state.jobs = await PlateApp.bridge.call("list_history", 100);
-    if (state.selectedId && !state.jobs.some((job) => job.id === state.selectedId)) {
-      state.selectedId = null;
+    const serial = ++refreshSerial;
+    const workspace = $("#history-workspace");
+    const refreshButton = $("#refresh-history-button");
+    workspace.setAttribute("aria-busy", "true");
+    refreshButton.disabled = true;
+    try {
+      const jobs = await PlateApp.bridge.call("list_history", 100);
+      if (serial !== refreshSerial) return;
+      state.jobs = jobs;
+      if (state.selectedId && !state.jobs.some((job) => job.id === state.selectedId)) {
+        state.selectedId = null;
+      }
+      if (!state.selectedId && state.jobs.length) {
+        state.selectedId = state.jobs[0].id;
+      }
+      render();
+    } catch (error) {
+      if (serial !== refreshSerial) return;
+      PlateApp.toast.show(`无法刷新任务历史：${error.message || error}`);
+    } finally {
+      if (serial === refreshSerial) {
+        workspace.setAttribute("aria-busy", "false");
+        refreshButton.disabled = false;
+      }
     }
-    render();
   }
 
   function init() {

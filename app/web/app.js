@@ -3,10 +3,20 @@
   const PlateApp = window.PlateApp = window.PlateApp || {};
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
+  let currentPage = "batch";
+  let hydrationSerial = 0;
 
   PlateApp.store = PlateApp.state.createStore();
 
-  function navigate(name) {
+  async function navigate(name) {
+    if (
+      currentPage === "review" &&
+      name !== "review" &&
+      PlateApp.review.state.dirty
+    ) {
+      if (!await PlateApp.review.confirmDiscard()) return false;
+      PlateApp.review.discardEdits();
+    }
     $$(".nav-item").forEach((button) => {
       const active = button.dataset.page === name;
       button.classList.toggle("is-active", active);
@@ -17,8 +27,13 @@
     });
     const heading = $(`#page-${name} h1`);
     if (heading) heading.focus({ preventScroll: true });
-    if (name === "review") PlateApp.review.refresh();
+    if (name === "review") {
+      PlateApp.review.refresh();
+      PlateApp.review.activate();
+    }
     if (name === "history") PlateApp.history.refresh();
+    currentPage = name;
+    return true;
   }
 
   PlateApp.navigate = navigate;
@@ -67,24 +82,65 @@
     PlateApp.batch.renderState();
 
     $$(".nav-item").forEach((button) => {
-      button.addEventListener("click", () => navigate(button.dataset.page));
+      button.addEventListener("click", async () => {
+        await navigate(button.dataset.page);
+      });
     });
     $$("[data-go-page]").forEach((button) => {
-      button.addEventListener("click", () => navigate(button.dataset.goPage));
+      button.addEventListener("click", async () => {
+        await navigate(button.dataset.goPage);
+      });
     });
+    $("#startup-retry-button").addEventListener("click", hydrate);
+  }
+
+  function setStartupState(kind, detail) {
+    const retryButton = $("#startup-retry-button");
+    const ready = kind === "ready";
+    const loading = kind === "loading";
+    $("#choose-files").hidden = !ready;
+    $("#choose-folder").hidden = !ready;
+    $("#choose-files").disabled = !ready;
+    $("#choose-folder").disabled = !ready;
+    retryButton.hidden = ready || loading;
+    retryButton.disabled = loading;
+    $("#drop-zone").classList.toggle("is-disabled", loading);
+
+    if (loading) {
+      $("#drop-eyebrow").textContent = "正在检查本地组件";
+      $("#drop-title").textContent = "正在准备 AI 引擎";
+      $("#drop-lead").textContent = "首次启动可能需要几秒钟。";
+    } else if (kind === "models_missing") {
+      $("#drop-eyebrow").textContent = "需要修复安装";
+      $("#drop-title").textContent = "AI 模型未就绪";
+      $("#drop-lead").textContent = detail || "请重新安装完整版本后再次检测。";
+    } else if (kind === "failed") {
+      $("#drop-eyebrow").textContent = "启动未完成";
+      $("#drop-title").textContent = "应用未能完成启动";
+      $("#drop-lead").textContent = detail || "请重新检测；如果仍失败，可在设置中打开诊断文件夹。";
+    } else {
+      $("#drop-eyebrow").textContent = "本地批量处理";
+      $("#drop-title").textContent = "把整组照片拖到这里";
+      $("#drop-lead").textContent = "自动检测并消除车牌，原片永不覆盖。";
+    }
   }
 
   async function hydrate() {
+    const serial = ++hydrationSerial;
+    setStartupState("loading");
+    $("#app-version").textContent = "正在启动…";
     try {
       const bootstrap = await PlateApp.bridge.call("bootstrap");
+      if (serial !== hydrationSerial) return;
       PlateApp.store.patch({
         bootstrap,
         modelsReady: Boolean(bootstrap.models_ready)
       }, "bootstrap_ready");
       $("#app-version").textContent = bootstrap.version;
-      $("#choose-files").disabled = !bootstrap.models_ready;
-      $("#choose-folder").disabled = !bootstrap.models_ready;
-      $("#drop-zone").classList.toggle("is-disabled", !bootstrap.models_ready);
+      setStartupState(
+        bootstrap.models_ready ? "ready" : "models_missing",
+        bootstrap.model_issue
+      );
       PlateApp.settings.hydrate(bootstrap);
       await Promise.all([
         PlateApp.review.refresh(),
@@ -105,7 +161,11 @@
       if (recoveryMessages.length) PlateApp.toast.show(recoveryMessages.join(" "));
       await PlateApp.bridge.call("frontend_ready");
     } catch (error) {
-      PlateApp.toast.show(`界面初始化失败：${error.message || error}`);
+      if (serial !== hydrationSerial) return;
+      const message = error.message || String(error);
+      $("#app-version").textContent = "启动失败";
+      setStartupState("failed", message);
+      PlateApp.toast.show(`界面初始化失败：${message}`);
     }
   }
 

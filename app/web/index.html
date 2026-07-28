@@ -46,15 +46,18 @@
             <div class="drop-icon-shell" aria-hidden="true">
               <img src="assets/icons/images.svg" alt="">
             </div>
-            <p class="eyebrow">PREVIEW-FIRST WORKSPACE</p>
-            <h2>把整组照片拖到这里</h2>
-            <p class="empty-lead">自动检测并消除车牌，原片永不覆盖。</p>
+            <p id="drop-eyebrow" class="eyebrow">本地批量处理</p>
+            <h2 id="drop-title">把整组照片拖到这里</h2>
+            <p id="drop-lead" class="empty-lead">自动检测并消除车牌，原片永不覆盖。</p>
             <div class="drop-actions">
               <button id="choose-files" class="button button-primary" type="button">
                 <img src="assets/icons/image-plus.svg" alt="">选择照片
               </button>
               <button id="choose-folder" class="button button-secondary" type="button">
                 <img src="assets/icons/folder-open.svg" alt="">选择文件夹
+              </button>
+              <button id="startup-retry-button" class="button button-secondary" type="button" hidden>
+                重新检测
               </button>
             </div>
             <div class="format-line">
@@ -207,7 +210,7 @@
       <section id="page-review" class="page page-standard" aria-labelledby="review-title">
         <header class="page-heading">
           <div>
-            <p class="eyebrow">EXCEPTION INBOX</p>
+            <p class="eyebrow">异常照片收件箱</p>
             <h1 id="review-title" tabindex="-1">待复核</h1>
             <p>集中处理低置信度、贴边和异常检测。</p>
           </div>
@@ -269,13 +272,13 @@
       <section id="page-history" class="page page-standard" aria-labelledby="history-title">
         <header class="page-heading">
           <div>
-            <p class="eyebrow">LOCAL JOB HISTORY</p>
+            <p class="eyebrow">本机任务记录</p>
             <h1 id="history-title" tabindex="-1">任务历史</h1>
             <p>查看最近 100 条本机记录，不保存车牌文字。</p>
           </div>
           <span class="privacy-note">没有云端同步</span>
         </header>
-        <section class="history-workspace">
+        <section id="history-workspace" class="history-workspace" aria-busy="false">
           <div class="history-toolbar">
             <div class="history-total"><strong id="history-total">0</strong><span>条任务</span></div>
             <label class="search-field">
@@ -320,7 +323,7 @@
       <section id="page-settings" class="page page-standard" aria-labelledby="settings-title">
         <header class="page-heading">
           <div>
-            <p class="eyebrow">PREFERENCES</p>
+            <p class="eyebrow">处理与支持</p>
             <h1 id="settings-title" tabindex="-1">设置</h1>
             <p>默认值已经针对摄影批处理优化。</p>
           </div>
@@ -356,15 +359,17 @@
               <span class="section-index">03</span>
               <div><h2 id="settings-data">数据与支持</h2><p>照片、EXIF 和任务记录始终留在本机。</p></div>
             </div>
-            <details class="runtime-details">
-              <summary>运行环境详情</summary>
-              <div class="runtime-detail-row"><span>WebView2</span><strong id="webview2-version">正在检测…</strong></div>
-            </details>
-            <div class="settings-actions">
-              <button id="export-diagnostics-button" class="button button-secondary" type="button">导出诊断包</button>
-              <button class="button button-quiet support-document" data-document="user-guide" type="button">使用指南</button>
-              <button class="button button-quiet support-document" data-document="troubleshooting" type="button">故障排除</button>
-              <button class="button button-quiet support-document" data-document="privacy" type="button">隐私说明</button>
+            <div class="settings-section-body">
+              <details class="runtime-details">
+                <summary>运行环境详情</summary>
+                <div class="runtime-detail-row"><span>WebView2</span><strong id="webview2-version">正在检测…</strong></div>
+              </details>
+              <div class="settings-actions">
+                <button id="export-diagnostics-button" class="button button-secondary" type="button">导出诊断包</button>
+                <button class="button button-quiet support-document" data-document="user-guide" type="button">使用指南</button>
+                <button class="button button-quiet support-document" data-document="troubleshooting" type="button">故障排除</button>
+                <button class="button button-quiet support-document" data-document="privacy" type="button">隐私说明</button>
+              </div>
             </div>
           </section>
         </div>

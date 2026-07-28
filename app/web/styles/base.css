@@ -42,6 +42,10 @@ summary:focus-visible,
   box-shadow: var(--focus-ring);
 }
 
+h1[tabindex="-1"]:focus {
+  box-shadow: none;
+}
+
 button:disabled {
   cursor: default;
 }

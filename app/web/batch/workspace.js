@@ -211,18 +211,30 @@
 
   async function start(paths) {
     if (!paths || !paths.length) return;
-    const response = await PlateApp.bridge.call("start_batch", paths);
-    if (!response.accepted) PlateApp.toast.show(response.message);
+    try {
+      const response = await PlateApp.bridge.call("start_batch", paths);
+      if (!response.accepted) PlateApp.toast.show(response.message);
+    } catch (error) {
+      PlateApp.toast.show(`无法开始批处理：${error.message || error}`);
+    }
   }
 
   async function chooseFiles() {
-    const paths = await PlateApp.bridge.call("choose_files");
-    await start(paths);
+    try {
+      const paths = await PlateApp.bridge.call("choose_files");
+      await start(paths);
+    } catch (error) {
+      PlateApp.toast.show(`无法选择照片：${error.message || error}`);
+    }
   }
 
   async function chooseFolder() {
-    const paths = await PlateApp.bridge.call("choose_folder");
-    await start(paths);
+    try {
+      const paths = await PlateApp.bridge.call("choose_folder");
+      await start(paths);
+    } catch (error) {
+      PlateApp.toast.show(`无法选择文件夹：${error.message || error}`);
+    }
   }
 
   function announce(message) {
@@ -288,7 +300,12 @@
       description: "当前正在处理的照片会安全完成，尚未开始的任务将取消。",
       confirmLabel: "取消剩余"
     });
-    if (accepted) await PlateApp.bridge.call("cancel");
+    if (!accepted) return;
+    try {
+      await PlateApp.bridge.call("cancel");
+    } catch (error) {
+      PlateApp.toast.show(`无法取消剩余任务：${error.message || error}`);
+    }
   }
 
   function init() {
@@ -297,7 +314,15 @@
     $("#add-files-button").addEventListener("click", chooseFiles);
     $("#pause-button").addEventListener("click", async () => {
       const state = PlateApp.store.get();
-      await PlateApp.bridge.call(state.paused ? "resume" : "pause");
+      const button = $("#pause-button");
+      button.disabled = true;
+      try {
+        await PlateApp.bridge.call(state.paused ? "resume" : "pause");
+      } catch (error) {
+        PlateApp.toast.show(`无法${state.paused ? "继续" : "暂停"}批处理：${error.message || error}`);
+      } finally {
+        renderState();
+      }
     });
     $("#cancel-button").addEventListener("click", cancelBatch);
     $("#review-button").addEventListener("click", () => PlateApp.navigate("review"));
@@ -315,16 +340,29 @@
     });
     $("#open-job-output-button").addEventListener("click", async () => {
       const identifier = PlateApp.store.get().selectedId;
-      if (!identifier || !await PlateApp.bridge.call("open_job_output", identifier)) {
+      if (!identifier) return;
+      try {
+        if (await PlateApp.bridge.call("open_job_output", identifier)) return;
         PlateApp.toast.show("输出文件夹暂不可用。");
+      } catch (error) {
+        PlateApp.toast.show(`无法打开输出文件夹：${error.message || error}`);
       }
     });
-    $("#inspector-review-button").addEventListener("click", () => PlateApp.navigate("review"));
+    $("#inspector-review-button").addEventListener("click", () => {
+      const identifier = PlateApp.store.get().selectedId;
+      if (!identifier) return;
+      PlateApp.navigate("review");
+      window.setTimeout(() => PlateApp.review.load(identifier), 0);
+    });
     $("#inspector-retry-button").addEventListener("click", async () => {
       const identifier = PlateApp.store.get().selectedId;
       if (!identifier) return;
-      const response = await PlateApp.bridge.call("retry_job", identifier);
-      PlateApp.toast.show(response.message);
+      try {
+        const response = await PlateApp.bridge.call("retry_job", identifier);
+        PlateApp.toast.show(response.message);
+      } catch (error) {
+        PlateApp.toast.show(`无法重新处理：${error.message || error}`);
+      }
     });
 
     const dropZone = $("#drop-zone");

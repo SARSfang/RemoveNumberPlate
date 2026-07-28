@@ -77,6 +77,12 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     assert 'role="tablist"' in markup
     assert 'role="listbox"' in markup
     assert 'aria-modal="true"' in markup
+    assert 'id="startup-retry-button"' in markup
+    assert 'id="drop-title"' in markup
+    assert "PREVIEW-FIRST WORKSPACE" not in markup
+    assert "EXCEPTION INBOX" not in markup
+    assert "LOCAL JOB HISTORY" not in markup
+    assert "PREFERENCES" not in markup
     local_assets = [
         value
         for value in re.findall(r'(?:href|src)="([^"]+)"', markup)
@@ -91,6 +97,8 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     assert "database_recovered" in script
     assert "settings_recovered" in script
     assert "window.app = { receiveBackendEvent }" in script
+    assert 'setStartupState("failed", message)' in script
+    assert 'setStartupState("loading")' in script
 
 
 def test_batch_service_processes_all_images_and_persists_results(tmp_path: Path) -> None:
