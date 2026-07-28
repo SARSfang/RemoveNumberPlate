@@ -162,6 +162,11 @@ packages may not provide compatible wheels.
 
 ## RC2 release engineering
 
+- Clean GitHub `windows-2025` run
+  [30319273349](https://github.com/SARSfang/RemoveNumberPlate/actions/runs/30319273349)
+  passed model reconstruction, tests, packaging, installer acceptance and
+  artifact upload at commit `d7bc7f3`; the unsigned preview installer SHA-256
+  is `62be0b452daf8e960060b2c267583dd702514144c43f0c408a1680160eee0047`.
 - Application, package, Windows resource and installer versions are synchronized
   at `0.2.0-rc.2` by an automated test.
 - Every enabled model can be rebuilt from its pinned official source. The two

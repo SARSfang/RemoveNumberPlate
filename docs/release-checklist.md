@@ -2,6 +2,16 @@
 
 Updated: 2026-07-28
 
+## RC2 GitHub 干净构建证据
+
+- GitHub Actions 运行：[30319273349](https://github.com/SARSfang/RemoveNumberPlate/actions/runs/30319273349)
+- 提交：`d7bc7f3ddc54b8a16436e0bd30fa03364e81eedc`
+- 结果：模型从固定来源重建、依赖安装、测试、PyInstaller 打包、中文安装/卸载验收及产物上传全部通过。
+- CI 安装包：`消除车牌-Setup-v0.2.0-rc.2-win64.exe`
+- CI 安装包 SHA-256：`62be0b452daf8e960060b2c267583dd702514144c43f0c408a1680160eee0047`
+- 产品文件版本：`0.2.0.2`
+- 当前手动预览包未签名；正式 `v*` 标签仍会在没有有效 Windows 签名证书时被流水线拒绝。
+
 ## RC2 工程门槛
 
 | 门槛 | 状态 | 证据 |
@@ -35,4 +45,3 @@ Updated: 2026-07-28
 - `WINDOWS_SIGN_CERTIFICATE_PASSWORD`：PFX 密码。
 
 正式 `v*` tag 只有在两项 secrets 可用、签名验证通过后才会创建 GitHub Release。
-
