@@ -24,7 +24,7 @@ packages may not provide compatible wheels.
 - M3 lightweight batch desktop UI: complete
 - M4 exception review editor: implementation complete; user acceptance on
   private photos remains pending
-- M5 Windows release candidate: RC3 engineering in progress; external commercial
+- M5 Windows release candidate: RC4 engineering in progress; external commercial
   release gates remain
 
 ## Current decisions
@@ -210,3 +210,22 @@ packages may not provide compatible wheels.
   smoke, user-data preservation and clean uninstall.
 - Local RC3 installer SHA-256:
   `33bae5c65866b963b7d18cce114f5a15bcaa7601fab5681c168b511db6828852`.
+
+## RC4 recovery hardening
+
+- Startup now verifies the SQLite task-history database with
+  `PRAGMA quick_check`. Only confirmed `SQLITE_CORRUPT`/`SQLITE_NOTADB`
+  failures are quarantined; locks, permissions and future schemas still fail
+  safely without moving the database.
+- Corrupt database bytes and invalid settings JSON are retained under
+  timestamped names before a fresh safe store/default settings are created.
+- Bootstrap and privacy-safe diagnostics expose only recovery booleans; the UI
+  explains recovery without leaking usernames, source paths or photo data.
+- A frozen EXE fault-injection test used an isolated platformdirs override:
+  the original corrupt bytes were preserved, the new database returned
+  `quick_check=ok`, and desktop smoke exited successfully.
+- Local verification passed 96 tests (one documented non-ASCII skip),
+  installer acceptance and RC3-to-RC4 in-place upgrade with user-data
+  preservation and clean uninstall.
+- Local RC4 installer SHA-256:
+  `184c31375a2a0ec836d593d698a43bdd3a0ec2bc2a7ccb9a44e6ddce2559e247`.

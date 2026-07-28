@@ -23,7 +23,7 @@ from app.cli import build_manual_processor, build_processor
 from app.config import PRESETS, AppPaths
 from app.core.batch import Processor
 from app.core.image_io import discover_images, load_image
-from app.core.job_store import JobStore
+from app.core.job_store import JobStore, prepare_job_database
 from app.core.manual_mask import build_manual_mask
 from app.core.pipeline import ManualMaskProcessor
 from app.domain.job import JobStatus
@@ -248,8 +248,21 @@ class DesktopApi:
         self._window: webview.Window | None = None
         self._paths = AppPaths.default()
         self._job_database = job_database or AppPaths.default().job_database
+        database_backup = prepare_job_database(self._job_database)
+        self._database_recovered = database_backup is not None
+        if database_backup is not None:
+            LOGGER.warning(
+                "Recovered corrupt history database; backup=%s",
+                database_backup.name,
+            )
         self._settings_store = SettingsStore(self._paths.data_dir / "settings.json")
-        self._settings = self._settings_store.load()
+        self._settings, settings_backup = self._settings_store.load_with_recovery()
+        self._settings_recovered = settings_backup is not None
+        if settings_backup is not None:
+            LOGGER.warning(
+                "Recovered invalid settings file; backup=%s",
+                settings_backup,
+            )
         default_factory = processor_factory or self._processor_factory_for(
             self._settings.preset
         )
@@ -302,6 +315,8 @@ class DesktopApi:
             "model_issue": readiness.issue,
             "history_counts": counts,
             "recovered_jobs": recovered,
+            "database_recovered": self._database_recovered,
+            "settings_recovered": self._settings_recovered,
             "runtime": "轻量 ONNX Runtime · 本地离线处理",
             "webview2_version": detect_webview2_version() or "未检测到",
             "preset": self._settings.preset,
@@ -398,6 +413,8 @@ class DesktopApi:
             "onnx_providers": list(device.onnx_providers),
             "preset": self._settings.preset,
             "job_counts": self._history_counts(),
+            "database_recovered": self._database_recovered,
+            "settings_recovered": self._settings_recovered,
         }
         with zipfile.ZipFile(
             destination,

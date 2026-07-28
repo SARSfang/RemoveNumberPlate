@@ -550,9 +550,17 @@
     $("#history-total").textContent = Object.values(counts).reduce((sum, value) => sum + value, 0);
     await refreshReviewJobs();
     await refreshHistory();
-    if (bootstrap.recovered_jobs > 0) {
-      showToast(`发现 ${bootstrap.recovered_jobs} 个中断任务，可在任务历史中重新处理。`);
+    const recoveryMessages = [];
+    if (bootstrap.database_recovered) {
+      recoveryMessages.push("任务历史数据库损坏，已保留原文件并创建新的安全数据库。");
     }
+    if (bootstrap.settings_recovered) {
+      recoveryMessages.push("设置文件无效，已保留原文件并恢复默认设置。");
+    }
+    if (bootstrap.recovered_jobs > 0) {
+      recoveryMessages.push(`发现 ${bootstrap.recovered_jobs} 个中断任务，可在任务历史中重新处理。`);
+    }
+    if (recoveryMessages.length) showToast(recoveryMessages.join(" "));
     await window.pywebview.api.frontend_ready();
   });
 

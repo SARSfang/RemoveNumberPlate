@@ -70,7 +70,10 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     assert "确认并重修" in markup
     assert 'data-document="privacy"' in markup
     stylesheet = (frontend / "styles.css").read_text(encoding="utf-8")
+    script = (frontend / "app.js").read_text(encoding="utf-8")
     assert "[hidden] { display: none !important; }" in stylesheet
+    assert "database_recovered" in script
+    assert "settings_recovered" in script
 
 
 def test_batch_service_processes_all_images_and_persists_results(tmp_path: Path) -> None:

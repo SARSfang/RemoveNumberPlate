@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-from app.core.job_store import JobStore
+from app.core.job_store import JobStore, prepare_job_database
 from app.domain.detection import BoundingBox, Detection
 from app.domain.job import JobStatus, RiskReason
 from app.domain.result import ProcessingResult
@@ -82,3 +82,41 @@ def test_job_store_migrates_v1_database_without_losing_jobs(tmp_path: Path) -> N
     connection.close()
     assert version == (3,)
     assert {"jobs", "detections", "mask_revisions"} <= tables
+
+
+def test_prepare_job_database_quarantines_confirmed_corruption(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "jobs.sqlite3"
+    corrupt_payload = b"this is not sqlite"
+    database.write_bytes(corrupt_payload)
+
+    backup = prepare_job_database(database)
+
+    assert backup is not None
+    assert backup.name.startswith("jobs.sqlite3.corrupt-")
+    assert backup.read_bytes() == corrupt_payload
+    with JobStore(database) as store:
+        store.verify_integrity()
+        assert store.counts() == {}
+
+
+def test_prepare_job_database_does_not_quarantine_future_schema(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "jobs.sqlite3"
+    connection = sqlite3.connect(database)
+    connection.execute("CREATE TABLE schema_info(version INTEGER NOT NULL)")
+    connection.execute("INSERT INTO schema_info(version) VALUES (999)")
+    connection.commit()
+    connection.close()
+
+    try:
+        prepare_job_database(database)
+    except RuntimeError as error:
+        assert "unsupported job database version" in str(error)
+    else:
+        raise AssertionError("future schema should be rejected")
+
+    assert database.is_file()
+    assert not list(tmp_path.glob("*.corrupt-*"))

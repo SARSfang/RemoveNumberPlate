@@ -20,6 +20,44 @@ INTERRUPTED_STATUSES = (
     JobStatus.INPAINTING,
     JobStatus.WRITING,
 )
+CORRUPTION_CODES = frozenset({sqlite3.SQLITE_CORRUPT, sqlite3.SQLITE_NOTADB})
+
+
+class DatabaseCorruptionError(sqlite3.DatabaseError):
+    """SQLite integrity checking proved that the history database is corrupt."""
+
+
+def _is_confirmed_corruption(error: sqlite3.DatabaseError) -> bool:
+    if isinstance(error, DatabaseCorruptionError):
+        return True
+    return getattr(error, "sqlite_errorcode", None) in CORRUPTION_CODES
+
+
+def _quarantine_database(path: Path) -> Path:
+    marker = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
+    backup = path.with_name(f"{path.name}.corrupt-{marker}")
+    path.replace(backup)
+    for suffix in ("-wal", "-shm", "-journal"):
+        sidecar = path.with_name(path.name + suffix)
+        if sidecar.exists():
+            sidecar.replace(backup.with_name(backup.name + suffix))
+    return backup
+
+
+def prepare_job_database(path: Path) -> Path | None:
+    """Open and verify history, quarantining only proven corruption."""
+
+    try:
+        with JobStore(path) as store:
+            store.verify_integrity()
+        return None
+    except sqlite3.DatabaseError as error:
+        if not _is_confirmed_corruption(error) or not path.is_file():
+            raise
+        backup = _quarantine_database(path)
+        with JobStore(path) as store:
+            store.verify_integrity()
+        return backup
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,9 +78,13 @@ class JobStore:
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(path)
-        self._connection.row_factory = sqlite3.Row
-        self._connection.execute("PRAGMA journal_mode=WAL")
-        self._initialize()
+        try:
+            self._connection.row_factory = sqlite3.Row
+            self._connection.execute("PRAGMA journal_mode=WAL")
+            self._initialize()
+        except Exception:
+            self._connection.close()
+            raise
 
     def _initialize(self) -> None:
         with self._connection:
@@ -121,6 +163,12 @@ class JobStore:
 
     def close(self) -> None:
         self._connection.close()
+
+    def verify_integrity(self) -> None:
+        row = self._connection.execute("PRAGMA quick_check").fetchone()
+        if row is None or str(row[0]).lower() != "ok":
+            detail = str(row[0]) if row is not None else "no result"
+            raise DatabaseCorruptionError(f"SQLite quick_check failed: {detail}")
 
     def __enter__(self) -> JobStore:
         return self

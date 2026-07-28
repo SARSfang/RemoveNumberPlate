@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "remove-number-plate"
-version = "0.2.0rc3"
+version = "0.2.0rc4"
 description = "Offline batch license-plate removal for automotive photographers"
 requires-python = ">=3.11,<3.13"
 dependencies = [
