@@ -85,19 +85,23 @@ try {
     & $Python -m PyInstaller --noconfirm --clean packaging\plate_clear.spec
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller build failed." }
 
-    $ApplicationExecutables = @(
+    $ReleaseDirectories = @(
         Get-ChildItem -LiteralPath "dist" -Directory |
-            Where-Object Name -ne "installer" |
+            Where-Object { $_.Name -notin @("installer", "preview") }
+    )
+    $ApplicationExecutables = @(
+        $ReleaseDirectories |
             ForEach-Object {
                 Get-ChildItem -LiteralPath $_.FullName -Filter "*.exe" -File
             }
     )
-    if ($ApplicationExecutables.Count -ne 1) {
-        throw "Expected one application executable, found $($ApplicationExecutables.Count)."
+    if ($ReleaseDirectories.Count -ne 1 -or $ApplicationExecutables.Count -ne 1) {
+        throw "Expected exactly one release application executable."
     }
+    $ApplicationExecutable = $ApplicationExecutables[0]
     if ($PfxPath) {
         & "$PSScriptRoot\sign_release.ps1" `
-            -Artifact $ApplicationExecutables[0].FullName `
+            -Artifact $ApplicationExecutable.FullName `
             -PfxPath $PfxPath `
             -PfxPassword $PfxPassword
     }
