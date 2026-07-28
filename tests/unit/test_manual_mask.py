@@ -51,3 +51,24 @@ def test_manual_mask_clips_out_of_bounds_commands() -> None:
     )
 
     assert np.all(mask == 255)
+
+
+def test_manual_mask_uses_edited_perspective_polygon() -> None:
+    detection = Detection(BoundingBox(20, 20, 80, 50), 0.8)
+
+    mask = build_manual_mask(
+        (100, 120),
+        [detection],
+        [
+            {
+                "type": "set_detection_polygon",
+                "target_id": "detection:0",
+                "points": [[20, 30], [80, 20], [75, 50], [25, 60]],
+            },
+            {"type": "set_margin", "value": 0},
+        ],
+    )
+
+    assert mask[40, 50] == 255
+    assert mask[21, 21] == 0
+    assert mask[59, 79] == 0

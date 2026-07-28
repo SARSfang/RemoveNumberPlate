@@ -8,11 +8,13 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from app.core.mask_builder import build_plate_mask
+from app.core.adjustment_commands import (
+    MAX_POINTS_PER_STROKE,
+    bounded_point,
+    resolve_adjustment_commands,
+)
+from app.core.mask_builder import PlateMaskPolicy, build_plate_mask
 from app.domain.detection import Detection
-
-MAX_COMMANDS = 10_000
-MAX_POINTS_PER_STROKE = 20_000
 
 
 def _number(value: object, name: str) -> float:
@@ -22,11 +24,8 @@ def _number(value: object, name: str) -> float:
 
 
 def _bounded_point(value: object, width: int, height: int) -> tuple[int, int]:
-    if not isinstance(value, Sequence) or len(value) != 2:
-        raise ValueError("point must contain x and y")
-    x = min(max(round(_number(value[0], "x")), 0), width - 1)
-    y = min(max(round(_number(value[1], "y")), 0), height - 1)
-    return x, y
+    x, y = bounded_point(value, width, height)
+    return min(round(x), width - 1), min(round(y), height - 1)
 
 
 def build_manual_mask(
@@ -39,20 +38,14 @@ def build_manual_mask(
     height, width = image_shape
     if height <= 0 or width <= 0:
         raise ValueError("image dimensions must be positive")
-    if len(commands) > MAX_COMMANDS:
-        raise ValueError("too many mask commands")
+    resolved = resolve_adjustment_commands(image_shape, detections, commands)
+    mask = build_plate_mask(
+        image_shape,
+        list(resolved.detections),
+        PlateMaskPolicy(resolved.margin_ratio),
+    )
 
-    removed: set[int] = set()
-    for command in commands:
-        index = command.get("index")
-        if command.get("type") == "remove_detection" and isinstance(index, int):
-            removed.add(index)
-    active_detections = [
-        detection for index, detection in enumerate(detections) if index not in removed
-    ]
-    mask = build_plate_mask(image_shape, active_detections)
-
-    for command in commands:
+    for command in resolved.paint_commands:
         command_type = command.get("type")
         if command_type == "rectangle":
             start = _bounded_point(command.get("start"), width, height)
@@ -68,10 +61,7 @@ def build_manual_mask(
             if len(raw_points) > MAX_POINTS_PER_STROKE:
                 raise ValueError("too many points in brush stroke")
             points = [_bounded_point(point, width, height) for point in raw_points]
-            radius = min(
-                max(round(_number(command.get("radius", 20), "radius")), 1),
-                500,
-            )
+            radius = round(_number(command.get("radius", 20), "radius"))
             color = (0.0,) if command_type == "brush_erase" else (255.0,)
             if len(points) == 1:
                 cv2.circle(mask, points[0], radius, color, thickness=-1)
