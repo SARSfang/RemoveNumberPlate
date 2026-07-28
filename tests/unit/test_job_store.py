@@ -30,6 +30,9 @@ def test_job_store_records_result_and_counts(tmp_path: Path) -> None:
         assert jobs[0].status is JobStatus.REVIEW_REQUIRED
         assert jobs[0].risks == (RiskReason.LOW_CONFIDENCE,)
         assert jobs[0].detections == (detection,)
+        assert jobs[0].elapsed_seconds == 1
+        assert jobs[0].created_at
+        assert jobs[0].updated_at
         assert store.counts() == {"review_required": 1}
 
 
@@ -77,5 +80,5 @@ def test_job_store_migrates_v1_database_without_losing_jobs(tmp_path: Path) -> N
         ).fetchall()
     }
     connection.close()
-    assert version == (2,)
+    assert version == (3,)
     assert {"jobs", "detections", "mask_revisions"} <= tables

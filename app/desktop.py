@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import os
+import platform
 import sys
 import threading
 import time
+import zipfile
 from collections.abc import Callable, Sequence
 from io import BytesIO
 from pathlib import Path
@@ -17,7 +20,7 @@ import webview
 from PIL import Image
 
 from app.cli import build_manual_processor, build_processor
-from app.config import AppPaths
+from app.config import PRESETS, AppPaths
 from app.core.batch import Processor
 from app.core.image_io import discover_images, load_image
 from app.core.job_store import JobStore
@@ -27,10 +30,14 @@ from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
 from app.infrastructure.device_probe import probe_device
 from app.infrastructure.model_registry import load_manifest
+from app.infrastructure.webview2 import detect_webview2_version
+from app.settings import SettingsStore, UserSettings
+from app.version import __display_version__, __version__
 
 EventSink = Callable[[str, dict[str, object]], None]
 ProcessorFactory = Callable[[], Processor]
 ManualProcessorFactory = Callable[[], ManualMaskProcessor]
+LOGGER = logging.getLogger("remove_number_plate.desktop")
 
 
 def frontend_directory() -> Path:
@@ -64,6 +71,14 @@ class BatchService:
     def busy(self) -> bool:
         with self._condition:
             return self._busy
+
+    def replace_processor_factory(self, processor_factory: ProcessorFactory) -> bool:
+        with self._condition:
+            if self._busy:
+                return False
+            self._processor_factory = processor_factory
+            self._processor = None
+            return True
 
     def start(self, inputs: Sequence[Path]) -> bool:
         with self._condition:
@@ -168,6 +183,11 @@ class BatchService:
                         store.set_status(identifier, JobStatus.DETECTING)
                         result = processor.process(source)
                     except Exception as error:
+                        LOGGER.exception(
+                            "Image processing failed for job %s (%s)",
+                            identifier,
+                            source.name,
+                        )
                         result = ProcessingResult(
                             None,
                             time.perf_counter() - started,
@@ -192,6 +212,7 @@ class BatchService:
                         },
                     )
         except Exception as error:
+            LOGGER.exception("Batch worker failed")
             self._emit(
                 "fatal_error",
                 {"message": f"{type(error).__name__}: {error}"},
@@ -212,16 +233,27 @@ class DesktopApi:
         job_database: Path | None = None,
     ) -> None:
         self._window: webview.Window | None = None
+        self._paths = AppPaths.default()
         self._job_database = job_database or AppPaths.default().job_database
+        self._settings_store = SettingsStore(self._paths.data_dir / "settings.json")
+        self._settings = self._settings_store.load()
+        default_factory = processor_factory or self._processor_factory_for(
+            self._settings.preset
+        )
         self._service = BatchService(
             self._send_event,
-            processor_factory,
+            default_factory,
             job_database=self._job_database,
         )
         self._manual_processor_factory = manual_processor_factory or build_manual_processor
         self._manual_processor: ManualMaskProcessor | None = None
         self._review_lock = threading.Lock()
         self._review_busy = False
+
+    @staticmethod
+    def _processor_factory_for(preset: str) -> ProcessorFactory:
+        confidence = PRESETS[preset].auto_confidence
+        return lambda: build_processor(confidence)
 
     def _bind_window(self, window: webview.Window) -> None:
         self._window = window
@@ -245,15 +277,135 @@ class DesktopApi:
             if artifact.enabled
         ]
         with JobStore(self._job_database) as store:
+            recovered = store.recover_interrupted()
             counts = store.counts()
         return {
+            "version": __display_version__,
+            "version_raw": __version__,
             "gpu": device.gpu_name or "未检测到独立显卡",
             "cuda_available": False,
             "models_ready": all(value["ready"] for value in model_states),
             "model_states": model_states,
             "history_counts": counts,
+            "recovered_jobs": recovered,
             "runtime": "轻量 ONNX Runtime · 本地离线处理",
+            "webview2_version": detect_webview2_version() or "未检测到",
+            "preset": self._settings.preset,
         }
+
+    def set_preset(self, preset: str) -> dict[str, object]:
+        if preset not in PRESETS:
+            return {"accepted": False, "message": "未知的处理预设。"}
+        if not self._service.replace_processor_factory(
+            self._processor_factory_for(preset)
+        ):
+            return {
+                "accepted": False,
+                "message": "当前批次运行中，请在处理结束后更改预设。",
+            }
+        self._settings = UserSettings(preset=preset)
+        self._settings_store.save(self._settings)
+        return {"accepted": True, "message": "处理预设已保存。"}
+
+    def list_history(self, limit: int = 100) -> list[dict[str, object]]:
+        safe_limit = max(1, min(int(limit), 500))
+        with JobStore(self._job_database) as store:
+            jobs = store.list_jobs(limit=safe_limit)
+        return [
+            {
+                "id": job.id,
+                "name": job.source.name,
+                "status": job.status.value,
+                "output": str(job.output) if job.output else None,
+                "elapsed": (
+                    round(job.elapsed_seconds, 3)
+                    if job.elapsed_seconds is not None
+                    else None
+                ),
+                "updated_at": job.updated_at,
+                "error": job.error,
+            }
+            for job in jobs
+        ]
+
+    def queue_for_manual_review(self, identifier: str) -> dict[str, object]:
+        with JobStore(self._job_database) as store:
+            job = store.get_job(identifier)
+            if job.status is not JobStatus.NO_PLATE:
+                return {
+                    "accepted": False,
+                    "message": "只有“未发现车牌”的照片可转入人工复核。",
+                }
+            store.set_status(identifier, JobStatus.REVIEW_REQUIRED)
+        self._send_event("history_changed", {})
+        return {"accepted": True, "message": "已加入待复核，可手动画出车牌区域。"}
+
+    def retry_job(self, identifier: str) -> dict[str, object]:
+        with JobStore(self._job_database) as store:
+            job = store.get_job(identifier)
+            if job.status not in {
+                JobStatus.QUEUED,
+                JobStatus.FAILED,
+                JobStatus.CANCELLED,
+            }:
+                return {"accepted": False, "message": "这个任务当前不能重新处理。"}
+            if not job.source.is_file():
+                return {"accepted": False, "message": "原照片已移动或删除，无法重新处理。"}
+            accepted = self._service.start([job.source])
+            if accepted and job.status is JobStatus.QUEUED:
+                store.set_status(identifier, JobStatus.CANCELLED)
+        return {
+            "accepted": accepted,
+            "message": "已重新加入处理队列。" if accepted else "当前已有批次正在运行。",
+        }
+
+    def export_diagnostics(self) -> dict[str, object]:
+        if self._window is None:
+            return {"accepted": False, "message": "桌面窗口尚未就绪。"}
+        selected = self._window.create_file_dialog(
+            webview.FileDialog.SAVE,
+            save_filename=f"消除车牌-诊断-{int(time.time())}.zip",
+            file_types=("ZIP 压缩包 (*.zip)",),
+        )
+        if not selected:
+            return {"accepted": False, "message": ""}
+        value = selected[0] if isinstance(selected, (list, tuple)) else selected
+        destination = Path(str(value))
+        if destination.suffix.lower() != ".zip":
+            destination = destination.with_suffix(".zip")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        device = probe_device()
+        diagnostics = {
+            "app_version": __version__,
+            "platform": platform.platform(),
+            "python": platform.python_version(),
+            "frozen": bool(getattr(sys, "frozen", False)),
+            "webview2": detect_webview2_version(),
+            "onnx_providers": list(device.onnx_providers),
+            "preset": self._settings.preset,
+            "job_counts": self._history_counts(),
+        }
+        with zipfile.ZipFile(
+            destination,
+            mode="w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as archive:
+            archive.writestr(
+                "diagnostics.json",
+                json.dumps(diagnostics, ensure_ascii=False, indent=2),
+            )
+            if self._paths.log_dir.exists():
+                for log_path in sorted(self._paths.log_dir.glob("application.log*")):
+                    archive.write(log_path, f"logs/{log_path.name}")
+        return {
+            "accepted": True,
+            "message": "诊断包已导出；其中不包含照片、文件路径或任务数据库。",
+            "path": str(destination),
+        }
+
+    def _history_counts(self) -> dict[str, int]:
+        with JobStore(self._job_database) as store:
+            return store.counts()
 
     def frontend_ready(self) -> bool:
         """Acknowledge that assets and the JS bridge completed initialization."""
@@ -366,6 +518,7 @@ class DesktopApi:
                 },
             )
         except Exception as error:
+            LOGGER.exception("Manual review failed for job %s", identifier)
             self._send_event(
                 "review_failed",
                 {

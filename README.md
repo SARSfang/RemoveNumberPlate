@@ -43,7 +43,13 @@ python -m app.cli report
 ## Windows 打包
 
 ```powershell
-.\.venv\Scripts\pyinstaller.exe --noconfirm --clean packaging\plate_clear.spec
+.\packaging\build_release.ps1
 ```
 
-生成的 `dist\消除车牌` 是完整的免安装目录。
+脚本会校验模型、运行测试、构建免安装目录与正式安装程序，并执行桌面启动验收。
+最终文件位于 `dist\installer`，同目录包含 SHA-256 校验值。
+
+## 故障诊断
+
+如果应用无法启动或处理失败，可在“设置 → 诊断与支持”导出 ZIP 诊断包。诊断包只含
+版本、运行环境、任务数量和轮转日志，不包含照片、文件路径或任务数据库。

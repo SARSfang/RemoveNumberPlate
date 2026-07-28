@@ -1,0 +1,18 @@
+from pathlib import Path
+
+from app.settings import SettingsStore, UserSettings
+
+
+def test_settings_round_trip(tmp_path: Path) -> None:
+    store = SettingsStore(tmp_path / "settings.json")
+
+    store.save(UserSettings(preset="quality"))
+
+    assert store.load() == UserSettings(preset="quality")
+
+
+def test_invalid_settings_fall_back_to_balanced(tmp_path: Path) -> None:
+    path = tmp_path / "settings.json"
+    path.write_text('{"preset":"unknown"}', encoding="utf-8")
+
+    assert SettingsStore(path).load() == UserSettings()

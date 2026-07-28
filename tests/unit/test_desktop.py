@@ -205,3 +205,50 @@ def test_desktop_review_round_trip_uses_persisted_detection(tmp_path: Path) -> N
             break
         time.sleep(0.01)
     assert status is JobStatus.COMPLETED
+
+
+def test_history_can_queue_no_plate_for_manual_review(tmp_path: Path) -> None:
+    source = tmp_path / "manual.jpg"
+    source.write_bytes(b"image")
+    database = tmp_path / "jobs.sqlite3"
+    with JobStore(database) as store:
+        identifier = store.create_job(source)
+        store.record_result(
+            identifier,
+            ProcessingResult(None, 0.2, status=JobStatus.NO_PLATE),
+        )
+    api = DesktopApi(lambda: FakeProcessor(), job_database=database)
+
+    history = api.list_history()
+    response = api.queue_for_manual_review(identifier)
+
+    assert history[0]["name"] == "manual.jpg"
+    assert history[0]["elapsed"] == 0.2
+    assert response["accepted"] is True
+    with JobStore(database) as store:
+        assert store.get_job(identifier).status is JobStatus.REVIEW_REQUIRED
+
+
+def test_retry_job_requeues_existing_source(tmp_path: Path) -> None:
+    source = tmp_path / "failed.jpg"
+    source.write_bytes(b"image")
+    database = tmp_path / "jobs.sqlite3"
+    with JobStore(database) as store:
+        identifier = store.create_job(source)
+        store.record_result(
+            identifier,
+            ProcessingResult(
+                None,
+                0.1,
+                status=JobStatus.FAILED,
+                error="test failure",
+            ),
+        )
+    api = DesktopApi(lambda: FakeProcessor(), job_database=database)
+
+    response = api.retry_job(identifier)
+
+    assert response["accepted"] is True
+    assert api._service.wait()
+    with JobStore(database) as store:
+        assert store.counts() == {"completed": 1, "failed": 1}

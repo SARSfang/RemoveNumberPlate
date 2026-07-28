@@ -15,6 +15,8 @@ datas = [
     (str(project_root / "app" / "web"), "app/web"),
     (str(project_root / "README.md"), "."),
     (str(project_root / "THIRD_PARTY_NOTICES.md"), "."),
+    (str(project_root / "RELEASE.md"), "."),
+    (str(project_root / "packaging" / "third_party_licenses"), "third_party_licenses"),
 ]
 datas.extend((str(project_root / "models" / name), "models") for name in model_files)
 a = Analysis(
@@ -54,6 +56,8 @@ exe = EXE(
     upx=True,
     console=False,
     disable_windowed_traceback=False,
+    icon=str(project_root / "packaging" / "app.ico"),
+    version=str(project_root / "packaging" / "version_info.txt"),
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,

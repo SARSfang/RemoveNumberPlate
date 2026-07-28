@@ -38,6 +38,7 @@
     const heading = $(`#page-${name} h1`);
     if (heading) heading.focus({ preventScroll: true });
     if (name === "review") refreshReviewJobs();
+    if (name === "history") refreshHistory();
   }
 
   function setProgress(value) {
@@ -178,6 +179,97 @@
     state.counts.review_required = state.reviewItems.length;
     renderReview();
     updateStats();
+  }
+
+  function statusLabel(status) {
+    return {
+      queued: "排队中",
+      detecting: "检测中",
+      inpainting: "修复中",
+      writing: "写入中",
+      completed: "已完成",
+      review_required: "待复核",
+      no_plate: "未发现车牌",
+      failed: "失败",
+      cancelled: "已取消"
+    }[status] || status;
+  }
+
+  function historyAction(label, action) {
+    const button = document.createElement("button");
+    button.className = "output-link";
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", action);
+    return button;
+  }
+
+  async function refreshHistory() {
+    if (!window.pywebview?.api?.list_history) return;
+    const jobs = await window.pywebview.api.list_history(100);
+    const rows = $("#history-rows");
+    rows.innerHTML = "";
+    $("#history-total").textContent = jobs.length;
+    if (!jobs.length) {
+      rows.innerHTML = '<tr class="empty-row"><td colspan="4">还没有本机任务记录。</td></tr>';
+      return;
+    }
+    jobs.forEach((job) => {
+      const row = document.createElement("tr");
+      const name = document.createElement("td");
+      name.textContent = job.name;
+      if (job.error) name.title = job.error;
+      const statusCell = document.createElement("td");
+      const status = document.createElement("span");
+      status.className = `status status-${job.status}`;
+      status.textContent = statusLabel(job.status);
+      statusCell.appendChild(status);
+      const updated = document.createElement("td");
+      const date = new Date(job.updated_at);
+      updated.textContent = Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("zh-CN");
+      const actions = document.createElement("td");
+      const actionWrap = document.createElement("div");
+      actionWrap.className = "history-actions";
+      if (job.output) {
+        actionWrap.appendChild(historyAction(
+          "打开输出",
+          () => window.pywebview.api.open_output(job.output)
+        ));
+      }
+      if (job.status === "review_required") {
+        actionWrap.appendChild(historyAction("进入复核", () => {
+          setPage("review");
+          window.setTimeout(() => loadReview(job.id), 0);
+        }));
+      }
+      if (job.status === "no_plate") {
+        actionWrap.appendChild(historyAction("手动标记", async () => {
+          const result = await window.pywebview.api.queue_for_manual_review(job.id);
+          showToast(result.message);
+          if (result.accepted) {
+            await refreshReviewJobs();
+            await refreshHistory();
+          }
+        }));
+      }
+      if (["queued", "failed", "cancelled"].includes(job.status)) {
+        actionWrap.appendChild(historyAction("重新处理", async () => {
+          const result = await window.pywebview.api.retry_job(job.id);
+          showToast(result.message);
+          if (result.accepted) setPage("batch");
+        }));
+      }
+      actions.appendChild(actionWrap);
+      row.append(name, statusCell, updated, actions);
+      rows.appendChild(row);
+    });
+  }
+
+  function moveReview(direction) {
+    if (!state.currentReview || state.reviewItems.length < 2) return;
+    const index = state.reviewItems.findIndex((item) => item.id === state.currentReview.id);
+    const next = (index + direction + state.reviewItems.length) % state.reviewItems.length;
+    loadReview(state.reviewItems[next].id);
   }
 
   async function loadReview(identifier) {
@@ -400,6 +492,7 @@
         $("#drop-zone").classList.remove("is-disabled");
         updateStats();
         if (!payload.cancelled && state.total > 0) showToast("批处理完成，原片未被覆盖。");
+        refreshHistory();
         break;
       case "review_started":
         $("#confirm-review-button").disabled = true;
@@ -413,6 +506,7 @@
         renderReview();
         updateStats();
         showToast(`重修完成，用时 ${Number(payload.elapsed).toFixed(2)} 秒。`);
+        refreshHistory();
         break;
       case "review_failed":
         $("#confirm-review-button").disabled = false;
@@ -427,6 +521,10 @@
         renderReview();
         updateStats();
         showToast("已跳过此图，原片未修改。");
+        refreshHistory();
+        break;
+      case "history_changed":
+        refreshHistory();
         break;
     }
   }
@@ -435,17 +533,25 @@
 
   window.addEventListener("pywebviewready", async () => {
     const bootstrap = await window.pywebview.api.bootstrap();
+    $("#app-version").textContent = bootstrap.version;
     $("#gpu-name").textContent = bootstrap.gpu;
     $("#runtime-name").textContent = bootstrap.runtime;
     $("#model-state").textContent = bootstrap.models_ready ? "已校验，可以处理" : "模型缺失或校验失败";
     $("#model-state").style.color = bootstrap.models_ready ? "var(--success)" : "var(--danger)";
+    $("#webview2-version").textContent = bootstrap.webview2_version;
+    $("#preset").value = bootstrap.preset || "balanced";
     const counts = bootstrap.history_counts || {};
     $("#history-total").textContent = Object.values(counts).reduce((sum, value) => sum + value, 0);
     await refreshReviewJobs();
+    await refreshHistory();
+    if (bootstrap.recovered_jobs > 0) {
+      showToast(`发现 ${bootstrap.recovered_jobs} 个中断任务，可在任务历史中重新处理。`);
+    }
     await window.pywebview.api.frontend_ready();
   });
 
   $$(".nav-item").forEach((button) => button.addEventListener("click", () => setPage(button.dataset.page)));
+  $$("[data-go-page]").forEach((button) => button.addEventListener("click", () => setPage(button.dataset.goPage)));
   $("#review-button").addEventListener("click", () => setPage("review"));
   $("#choose-files").addEventListener("click", async () => startBatch(await window.pywebview.api.choose_files()));
   $("#choose-folder").addEventListener("click", async () => startBatch(await window.pywebview.api.choose_folder()));
@@ -454,6 +560,19 @@
     else await window.pywebview.api.pause();
   });
   $("#cancel-button").addEventListener("click", () => window.pywebview.api.cancel());
+  $("#refresh-history-button").addEventListener("click", refreshHistory);
+  $("#preset").addEventListener("change", async (event) => {
+    const response = await window.pywebview.api.set_preset(event.target.value);
+    showToast(response.message);
+    if (!response.accepted) {
+      const bootstrap = await window.pywebview.api.bootstrap();
+      event.target.value = bootstrap.preset || "balanced";
+    }
+  });
+  $("#export-diagnostics-button").addEventListener("click", async () => {
+    const response = await window.pywebview.api.export_diagnostics();
+    if (response.message) showToast(response.message);
+  });
 
   $$(".tool-button[data-tool]").forEach((button) => button.addEventListener("click", () => {
     state.tool = button.dataset.tool;
@@ -494,6 +613,8 @@
     if (!state.currentReview) return;
     await window.pywebview.api.skip_review(state.currentReview.id);
   });
+  $("#previous-review-button").addEventListener("click", () => moveReview(-1));
+  $("#next-review-button").addEventListener("click", () => moveReview(1));
 
   const reviewCanvas = $("#review-canvas");
   reviewCanvas.addEventListener("pointerdown", (event) => {
@@ -577,6 +698,10 @@
     } else if (!event.ctrlKey && ["r", "b", "e"].includes(event.key.toLowerCase())) {
       const tool = { r: "rectangle", b: "brush_add", e: "brush_erase" }[event.key.toLowerCase()];
       $(`.tool-button[data-tool="${tool}"]`).click();
+    } else if (!event.ctrlKey && event.key === "[") {
+      moveReview(-1);
+    } else if (!event.ctrlKey && event.key === "]") {
+      moveReview(1);
     }
   });
   window.addEventListener("keyup", (event) => {

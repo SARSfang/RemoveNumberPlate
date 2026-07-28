@@ -1,7 +1,25 @@
 # Third-party notices
 
-This file tracks candidate production dependencies and model artifacts. It is
-not yet a final release notice.
+This file tracks production dependencies and model artifacts for the release
+candidate. Formal commercial redistribution review remains required where
+explicitly noted below.
+
+## Python runtime dependencies
+
+Exact versions, license metadata, and the license files shipped by each wheel
+are bundled in `third_party_licenses/`. The release build collects these files
+for NumPy, ONNX Runtime, OpenCV, Pillow, piexif, platformdirs, pyclipper,
+pywebview, and Shapely. NumPy's bundled-library notices are preserved in its
+collected license file.
+
+## Microsoft Edge WebView2 Evergreen Bootstrapper
+
+- Publisher: Microsoft Corporation
+- Artifact: `MicrosoftEdgeWebview2Setup.exe`
+- Usage: installed only when the Evergreen Runtime is absent
+- Distribution documentation:
+  <https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution>
+- The bundled executable must retain a valid Microsoft Authenticode signature.
 
 ## PaddleX PP-YOLOE-S vehicle detector
 

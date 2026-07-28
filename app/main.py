@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from app.desktop import launch, smoke
+from app.infrastructure.webview2 import WEBVIEW2_DOWNLOAD_URL, detect_webview2_version
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -22,4 +23,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         result = build_processor(0.60).process(arguments.verify_image)
         return 0 if result.status is not JobStatus.FAILED else 2
+    if detect_webview2_version() is None:
+        raise RuntimeError(
+            "未检测到 Microsoft Edge WebView2 Runtime。"
+            f"请安装后重试：{WEBVIEW2_DOWNLOAD_URL}"
+        )
     return launch()

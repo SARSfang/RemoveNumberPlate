@@ -14,7 +14,7 @@ from app.domain.detection import BoundingBox, Detection
 from app.domain.job import JobStatus, RiskReason
 from app.domain.result import ProcessingResult
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 INTERRUPTED_STATUSES = (
     JobStatus.DETECTING,
     JobStatus.INPAINTING,
@@ -31,6 +31,9 @@ class StoredJob:
     risks: tuple[RiskReason, ...]
     error: str | None
     detections: tuple[Detection, ...]
+    elapsed_seconds: float | None
+    created_at: str
+    updated_at: str
 
 
 class JobStore:
@@ -65,6 +68,7 @@ class JobStore:
                     status TEXT NOT NULL,
                     risks_json TEXT NOT NULL DEFAULT '[]',
                     error TEXT,
+                    elapsed_seconds REAL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 )
@@ -101,6 +105,15 @@ class JobStore:
                     (SCHEMA_VERSION,),
                 )
             elif current_version < SCHEMA_VERSION:
+                if current_version < 3:
+                    columns = {
+                        str(column["name"])
+                        for column in self._connection.execute("PRAGMA table_info(jobs)")
+                    }
+                    if "elapsed_seconds" not in columns:
+                        self._connection.execute(
+                            "ALTER TABLE jobs ADD COLUMN elapsed_seconds REAL"
+                        )
                 self._connection.execute(
                     "UPDATE schema_info SET version = ?",
                     (SCHEMA_VERSION,),
@@ -143,6 +156,7 @@ class JobStore:
                 """
                 UPDATE jobs
                 SET output = ?, status = ?, risks_json = ?, error = ?, updated_at = ?
+                    , elapsed_seconds = ?
                 WHERE id = ?
                 """,
                 (
@@ -151,6 +165,7 @@ class JobStore:
                     json.dumps([risk.value for risk in result.risks]),
                     result.error,
                     datetime.now(UTC).isoformat(),
+                    result.elapsed_seconds,
                     identifier,
                 ),
             )
@@ -213,9 +228,10 @@ class JobStore:
         parameters.append(limit)
         rows = self._connection.execute(
             f"""
-            SELECT id, source, output, status, risks_json, error
+            SELECT id, source, output, status, risks_json, error,
+                   elapsed_seconds, created_at, updated_at
             FROM jobs {where}
-            ORDER BY created_at ASC
+            ORDER BY created_at DESC
             LIMIT ?
             """,
             parameters,
@@ -225,7 +241,8 @@ class JobStore:
     def get_job(self, identifier: str) -> StoredJob:
         row = self._connection.execute(
             """
-            SELECT id, source, output, status, risks_json, error
+            SELECT id, source, output, status, risks_json, error,
+                   elapsed_seconds, created_at, updated_at
             FROM jobs WHERE id = ?
             """,
             (identifier,),
@@ -268,6 +285,13 @@ class JobStore:
             ),
             error=str(row["error"]) if row["error"] else None,
             detections=detections,
+            elapsed_seconds=(
+                float(row["elapsed_seconds"])
+                if row["elapsed_seconds"] is not None
+                else None
+            ),
+            created_at=str(row["created_at"]),
+            updated_at=str(row["updated_at"]),
         )
 
     def record_mask_revision(
