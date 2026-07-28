@@ -19,7 +19,7 @@
     tool: "polygon",
     brushSize: 36,
     maskOpacity: .36,
-    marginRatio: .08,
+    marginRatio: .35,
     viewVariant: "mask",
     phase: "editing",
     view: { scale: 1, x: 0, y: 0 },
@@ -224,7 +224,7 @@
         manual: false
       }
     ]));
-    state.marginRatio = .08;
+    state.marginRatio = Number(state.current.default_margin_ratio ?? .35);
     state.commands.forEach((command) => {
       if (command.type === "set_detection_polygon" && values.has(command.target_id)) {
         values.get(command.target_id).points = clonePoints(command.points);
@@ -240,7 +240,7 @@
         const target = command.target_id || `detection:${command.index}`;
         values.delete(target);
       } else if (command.type === "set_margin") {
-        state.marginRatio = Number(command.value ?? command.margin_ratio ?? .08);
+        state.marginRatio = Number(command.value ?? command.margin_ratio ?? .35);
       }
     });
     state.polygons = [...values.values()];

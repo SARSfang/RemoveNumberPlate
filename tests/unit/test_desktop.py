@@ -15,6 +15,7 @@ from app.domain.detection import BoundingBox, Detection, Quadrilateral
 from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
 from app.release_readiness import ModelReadiness, StorageReadiness
+from app.settings import SettingsStore, UserSettings
 
 
 class FakeProcessor:
@@ -100,6 +101,9 @@ def test_frontend_bundle_contains_only_local_assets() -> None:
     assert 'aria-modal="true"' in markup
     assert 'id="startup-retry-button"' in markup
     assert 'id="drop-title"' in markup
+    assert 'id="default-mask-margin"' in markup
+    assert 'id="default-mask-margin-number"' in markup
+    assert 'min="-30" max="100" step="1" value="35"' in markup
     assert "PREVIEW-FIRST WORKSPACE" not in markup
     assert "EXCEPTION INBOX" not in markup
     assert "LOCAL JOB HISTORY" not in markup
@@ -293,6 +297,39 @@ def test_desktop_api_exposes_no_public_object_graph(tmp_path: Path) -> None:
     )
 
     assert all(name.startswith("_") for name in vars(api))
+
+
+def test_mask_margin_setting_persists_without_resetting_preset(tmp_path: Path) -> None:
+    api = DesktopApi(
+        lambda: FakeProcessor(),
+        job_database=tmp_path / "jobs.sqlite3",
+    )
+    settings_store = SettingsStore(tmp_path / "settings.json")
+    api._settings_store = settings_store
+    api._settings = UserSettings(preset="quality", mask_margin_ratio=0.35)
+
+    response = api.set_mask_margin(72)
+
+    assert response["accepted"] is True
+    assert settings_store.load() == UserSettings(
+        preset="quality",
+        mask_margin_ratio=0.72,
+    )
+
+
+def test_processor_factory_receives_saved_mask_margin(monkeypatch) -> None:
+    captured: list[tuple[float, float]] = []
+
+    def fake_build_processor(confidence: float, margin: float) -> FakeProcessor:
+        captured.append((confidence, margin))
+        return FakeProcessor()
+
+    monkeypatch.setattr(desktop, "build_processor", fake_build_processor)
+
+    processor = DesktopApi._processor_factory_for("quality", 0.72)()
+
+    assert isinstance(processor, FakeProcessor)
+    assert captured == [(0.50, 0.72)]
 
 
 def test_desktop_api_rejects_batch_when_models_fail_integrity(

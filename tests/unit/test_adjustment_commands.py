@@ -46,12 +46,24 @@ def test_commands_support_legacy_remove_index() -> None:
     )
 
     assert resolved.detections == ()
+    assert resolved.margin_ratio == 0.35
+
+
+def test_commands_accept_configured_default_margin() -> None:
+    resolved = resolve_adjustment_commands(
+        (100, 100),
+        [],
+        [],
+        default_margin_ratio=0.72,
+    )
+
+    assert resolved.margin_ratio == 0.72
 
 
 @pytest.mark.parametrize(
     "command",
     [
-        {"type": "set_margin", "value": 0.36},
+        {"type": "set_margin", "value": 1.01},
         {"type": "brush_add", "points": [[1, 2]], "radius": 0},
         {"type": "add_polygon", "id": "not-a-uuid", "points": []},
         {"type": "unknown"},

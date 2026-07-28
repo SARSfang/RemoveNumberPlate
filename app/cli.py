@@ -10,6 +10,7 @@ from typing import Any
 from app.config import AppPaths
 from app.core.batch import BatchReport, process_batch, resume_batch
 from app.core.job_store import JobStore
+from app.core.mask_builder import DEFAULT_MARGIN_RATIO, PlateMaskPolicy
 from app.core.pipeline import ImageProcessor, ManualMaskProcessor
 from app.core.two_stage_detector import VehicleFirstPlateDetector
 from app.domain.job import JobStatus
@@ -27,7 +28,10 @@ def _verify_enabled_models(paths: AppPaths) -> None:
         raise RuntimeError(f"missing or invalid model artifacts: {', '.join(failures)}")
 
 
-def build_processor(auto_confidence: float) -> ImageProcessor:
+def build_processor(
+    auto_confidence: float,
+    mask_margin_ratio: float = DEFAULT_MARGIN_RATIO,
+) -> ImageProcessor:
     paths = AppPaths.default()
     _verify_enabled_models(paths)
     detector = VehicleFirstPlateDetector(
@@ -43,6 +47,7 @@ def build_processor(auto_confidence: float) -> ImageProcessor:
         detector,
         inpainter,
         auto_confidence=auto_confidence,
+        mask_policy=PlateMaskPolicy(mask_margin_ratio),
     )
 
 

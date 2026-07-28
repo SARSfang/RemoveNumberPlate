@@ -15,16 +15,16 @@ def test_mask_follows_perspective_polygon_not_bounding_box_corners() -> None:
     assert mask[94, 219] == 0
 
 
-def test_mask_default_margin_is_small_and_positive() -> None:
+def test_mask_default_margin_is_thirty_five_percent() -> None:
     polygon = Quadrilateral(((100, 50), (200, 50), (200, 70), (100, 70)))
     detection = Detection(polygon.bounding_box, 0.9, polygon=polygon)
 
     mask = build_plate_mask((120, 300), [detection])
 
-    assert mask[48, 150] == 255
-    assert mask[45, 150] == 0
-    assert mask[60, 98] == 255
-    assert mask[60, 95] == 0
+    assert mask[43, 150] == 255
+    assert mask[42, 150] == 0
+    assert mask[60, 93] == 255
+    assert mask[60, 92] == 0
 
 
 def test_mask_supports_negative_margin() -> None:
@@ -45,7 +45,7 @@ def test_mask_clips_expansion_at_image_edges() -> None:
     assert mask[1, 0] == 255
 
 
-@pytest.mark.parametrize("ratio", [-0.151, 0.351])
+@pytest.mark.parametrize("ratio", [-0.301, 1.001])
 def test_mask_policy_rejects_out_of_range_margin(ratio: float) -> None:
     with pytest.raises(ValueError, match="margin"):
         PlateMaskPolicy(ratio)

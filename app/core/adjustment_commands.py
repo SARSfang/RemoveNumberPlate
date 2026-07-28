@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from math import isfinite
 from uuid import UUID
 
-from app.core.mask_builder import MAXIMUM_MARGIN_RATIO, MINIMUM_MARGIN_RATIO
+from app.core.mask_builder import (
+    DEFAULT_MARGIN_RATIO,
+    MAXIMUM_MARGIN_RATIO,
+    MINIMUM_MARGIN_RATIO,
+)
 from app.domain.detection import Detection, Quadrilateral
 
 MAX_COMMANDS = 10_000
@@ -77,6 +81,8 @@ def resolve_adjustment_commands(
     image_shape: tuple[int, int],
     detections: Sequence[Detection],
     commands: Sequence[Mapping[str, object]],
+    *,
+    default_margin_ratio: float = DEFAULT_MARGIN_RATIO,
 ) -> ResolvedAdjustment:
     """Apply structural commands and validate all paint commands."""
 
@@ -90,7 +96,9 @@ def resolve_adjustment_commands(
         f"detection:{index}": detection
         for index, detection in enumerate(detections)
     }
-    margin_ratio = 0.08
+    if not MINIMUM_MARGIN_RATIO <= default_margin_ratio <= MAXIMUM_MARGIN_RATIO:
+        raise ValueError("default margin must be between -0.30 and 1.00")
+    margin_ratio = default_margin_ratio
     paint_commands: list[Mapping[str, object]] = []
 
     for command in commands:
@@ -135,7 +143,7 @@ def resolve_adjustment_commands(
                 "margin",
             )
             if not MINIMUM_MARGIN_RATIO <= margin_ratio <= MAXIMUM_MARGIN_RATIO:
-                raise ValueError("margin must be between -0.15 and 0.35")
+                raise ValueError("margin must be between -0.30 and 1.00")
         elif command_type in {"brush_add", "brush_erase"}:
             raw_points = command.get("points")
             if (

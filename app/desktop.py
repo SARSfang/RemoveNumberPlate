@@ -40,6 +40,7 @@ from app.core.job_preview import (
 )
 from app.core.job_store import JobStore, prepare_job_database
 from app.core.manual_mask import build_manual_mask
+from app.core.mask_builder import MAXIMUM_MARGIN_RATIO, MINIMUM_MARGIN_RATIO
 from app.core.pipeline import ManualMaskProcessor
 from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
@@ -330,7 +331,8 @@ class DesktopApi:
                 settings_backup,
             )
         default_factory = processor_factory or self._processor_factory_for(
-            self._settings.preset
+            self._settings.preset,
+            self._settings.mask_margin_ratio,
         )
         self._service = BatchService(
             self._send_event,
@@ -347,9 +349,12 @@ class DesktopApi:
         )
 
     @staticmethod
-    def _processor_factory_for(preset: str) -> ProcessorFactory:
+    def _processor_factory_for(
+        preset: str,
+        mask_margin_ratio: float,
+    ) -> ProcessorFactory:
         confidence = PRESETS[preset].auto_confidence
-        return lambda: build_processor(confidence)
+        return lambda: build_processor(confidence, mask_margin_ratio)
 
     def _bind_window(self, window: webview.Window) -> None:
         self._window = window
@@ -390,21 +395,50 @@ class DesktopApi:
             "runtime": "轻量 ONNX Runtime · 本地离线处理",
             "webview2_version": detect_webview2_version() or "未检测到",
             "preset": self._settings.preset,
+            "mask_margin_percent": round(self._settings.mask_margin_ratio * 100),
         }
 
     def set_preset(self, preset: str) -> dict[str, object]:
         if preset not in PRESETS:
             return {"accepted": False, "message": "未知的处理预设。"}
         if not self._service.replace_processor_factory(
-            self._processor_factory_for(preset)
+            self._processor_factory_for(preset, self._settings.mask_margin_ratio)
         ):
             return {
                 "accepted": False,
                 "message": "当前批次运行中，请在处理结束后更改预设。",
             }
-        self._settings = UserSettings(preset=preset)
+        self._settings = UserSettings(
+            preset=preset,
+            mask_margin_ratio=self._settings.mask_margin_ratio,
+        )
         self._settings_store.save(self._settings)
         return {"accepted": True, "message": "处理预设已保存。"}
+
+    def set_mask_margin(self, percent: int | float) -> dict[str, object]:
+        """Persist the shared automatic and editor mask-margin default."""
+
+        if isinstance(percent, bool) or not isinstance(percent, (int, float)):
+            return {"accepted": False, "message": "边缘扩展值无效。"}
+        ratio = float(percent) / 100
+        if not MINIMUM_MARGIN_RATIO <= ratio <= MAXIMUM_MARGIN_RATIO:
+            return {
+                "accepted": False,
+                "message": "边缘扩展必须在 -30% 到 +100% 之间。",
+            }
+        if not self._service.replace_processor_factory(
+            self._processor_factory_for(self._settings.preset, ratio)
+        ):
+            return {
+                "accepted": False,
+                "message": "当前批次运行中，请在处理结束后修改边缘扩展。",
+            }
+        self._settings = UserSettings(
+            preset=self._settings.preset,
+            mask_margin_ratio=ratio,
+        )
+        self._settings_store.save(self._settings)
+        return {"accepted": True, "message": "默认边缘扩展已保存。"}
 
     def list_history(self, limit: int = 100) -> list[dict[str, object]]:
         safe_limit = max(1, min(int(limit), 500))
@@ -598,6 +632,7 @@ class DesktopApi:
                 for index, detection in enumerate(job.detections)
             ],
             "commands": commands,
+            "default_margin_ratio": self._settings.mask_margin_ratio,
             "risks": [risk.value for risk in job.risks],
             "has_result": bool(job.output and job.output.is_file()),
         }
@@ -635,6 +670,7 @@ class DesktopApi:
                 for index, detection in enumerate(job.detections)
             ],
             "commands": commands,
+            "default_margin_ratio": self._settings.mask_margin_ratio,
             "risks": [risk.value for risk in job.risks],
         }
 

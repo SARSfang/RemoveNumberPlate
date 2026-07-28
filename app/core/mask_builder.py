@@ -12,15 +12,16 @@ from numpy.typing import NDArray
 
 from app.domain.detection import Detection, Quadrilateral
 
-MINIMUM_MARGIN_RATIO = -0.15
-MAXIMUM_MARGIN_RATIO = 0.35
+MINIMUM_MARGIN_RATIO = -0.30
+MAXIMUM_MARGIN_RATIO = 1.00
+DEFAULT_MARGIN_RATIO = 0.35
 
 
 @dataclass(frozen=True, slots=True)
 class PlateMaskPolicy:
     """A proportional polygon margin covering the physical plate border."""
 
-    margin_ratio: float = 0.08
+    margin_ratio: float = DEFAULT_MARGIN_RATIO
 
     def __post_init__(self) -> None:
         if not MINIMUM_MARGIN_RATIO <= self.margin_ratio <= MAXIMUM_MARGIN_RATIO:

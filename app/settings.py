@@ -5,9 +5,15 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from math import isfinite
 from pathlib import Path
 
 from app.config import PRESETS, AppPaths
+from app.core.mask_builder import (
+    DEFAULT_MARGIN_RATIO,
+    MAXIMUM_MARGIN_RATIO,
+    MINIMUM_MARGIN_RATIO,
+)
 
 DEFAULT_PRESET = "balanced"
 
@@ -15,10 +21,23 @@ DEFAULT_PRESET = "balanced"
 @dataclass(frozen=True, slots=True)
 class UserSettings:
     preset: str = DEFAULT_PRESET
+    mask_margin_ratio: float = DEFAULT_MARGIN_RATIO
 
     def __post_init__(self) -> None:
         if self.preset not in PRESETS:
             raise ValueError(f"unknown processing preset: {self.preset}")
+        if (
+            isinstance(self.mask_margin_ratio, bool)
+            or not isinstance(self.mask_margin_ratio, (int, float))
+            or not isfinite(self.mask_margin_ratio)
+            or not MINIMUM_MARGIN_RATIO
+            <= self.mask_margin_ratio
+            <= MAXIMUM_MARGIN_RATIO
+        ):
+            raise ValueError(
+                f"mask margin must be between {MINIMUM_MARGIN_RATIO} "
+                f"and {MAXIMUM_MARGIN_RATIO}"
+            )
 
 
 class SettingsStore:
@@ -32,7 +51,13 @@ class SettingsStore:
         try:
             value = json.loads(self.path.read_text(encoding="utf-8"))
             return (
-                UserSettings(preset=str(value.get("preset", DEFAULT_PRESET))),
+                UserSettings(
+                    preset=str(value.get("preset", DEFAULT_PRESET)),
+                    mask_margin_ratio=value.get(
+                        "mask_margin_ratio",
+                        DEFAULT_MARGIN_RATIO,
+                    ),
+                ),
                 None,
             )
         except FileNotFoundError:
@@ -52,7 +77,14 @@ class SettingsStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix(".tmp")
         temporary.write_text(
-            json.dumps({"preset": settings.preset}, ensure_ascii=False, indent=2),
+            json.dumps(
+                {
+                    "preset": settings.preset,
+                    "mask_margin_ratio": settings.mask_margin_ratio,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
             encoding="utf-8",
         )
         temporary.replace(self.path)

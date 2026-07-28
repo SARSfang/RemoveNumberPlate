@@ -23,6 +23,42 @@
     }
   }
 
+  function renderMaskMargin(value) {
+    const percent = Math.max(-30, Math.min(100, Math.round(Number(value))));
+    const safePercent = Number.isFinite(percent) ? percent : 35;
+    $("#default-mask-margin").value = String(safePercent);
+    $("#default-mask-margin-number").value = String(safePercent);
+    $("#default-mask-margin-value").textContent =
+      `${safePercent >= 0 ? "+" : ""}${safePercent}%`;
+    $("#default-mask-margin-warning").hidden = safePercent <= 60;
+    return safePercent;
+  }
+
+  async function saveMaskMargin(value) {
+    const range = $("#default-mask-margin");
+    const number = $("#default-mask-margin-number");
+    const previous = Number(range.dataset.savedValue || 35);
+    const percent = renderMaskMargin(value);
+    range.disabled = true;
+    number.disabled = true;
+    try {
+      const response = await PlateApp.bridge.call("set_mask_margin", percent);
+      PlateApp.toast.show(response.message);
+      if (response.accepted) {
+        range.dataset.savedValue = String(percent);
+        number.dataset.savedValue = String(percent);
+      } else {
+        renderMaskMargin(previous);
+      }
+    } catch (error) {
+      renderMaskMargin(previous);
+      PlateApp.toast.show(`无法保存默认边缘扩展：${error.message || error}`);
+    } finally {
+      range.disabled = false;
+      number.disabled = false;
+    }
+  }
+
   function hydrate(bootstrap) {
     $("#gpu-name").textContent = bootstrap.gpu;
     $("#runtime-name").textContent = bootstrap.runtime;
@@ -36,10 +72,22 @@
     $("#webview2-version").textContent = bootstrap.webview2_version;
     $("#preset").value = bootstrap.preset || "balanced";
     $("#preset").dataset.savedValue = $("#preset").value;
+    const marginPercent = renderMaskMargin(bootstrap.mask_margin_percent ?? 35);
+    $("#default-mask-margin").dataset.savedValue = String(marginPercent);
+    $("#default-mask-margin-number").dataset.savedValue = String(marginPercent);
   }
 
   function init() {
     $("#preset").addEventListener("change", savePreset);
+    $("#default-mask-margin").addEventListener("input", (event) => {
+      renderMaskMargin(event.currentTarget.value);
+    });
+    $("#default-mask-margin").addEventListener("change", (event) => {
+      saveMaskMargin(event.currentTarget.value);
+    });
+    $("#default-mask-margin-number").addEventListener("change", (event) => {
+      saveMaskMargin(event.currentTarget.value);
+    });
     $("#export-diagnostics-button").addEventListener("click", async () => {
       const button = $("#export-diagnostics-button");
       button.disabled = true;

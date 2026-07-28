@@ -256,6 +256,14 @@
   padding: 22px;
 }
 
+.settings-processing-body {
+  display: grid;
+}
+
+.settings-processing-body .setting-row + .setting-row {
+  border-top: 1px solid var(--border-subtle);
+}
+
 .setting-row label {
   font-weight: 650;
 }
@@ -269,6 +277,30 @@
 .setting-row select {
   min-width: 180px;
   padding: 0 12px;
+}
+
+.margin-setting-control {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 72px 52px;
+  align-items: center;
+  gap: 10px;
+}
+
+.margin-setting-control input[type="number"] {
+  width: 72px;
+  padding: 0 8px;
+  text-align: right;
+}
+
+.margin-setting-control output {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: right;
+}
+
+.setting-row .setting-warning {
+  color: var(--warning);
 }
 
 .settings-facts {

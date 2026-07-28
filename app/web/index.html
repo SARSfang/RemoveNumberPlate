@@ -256,8 +256,8 @@
                 <button id="restore-button" class="tool-button" type="button">恢复自动框</button>
               </div>
               <label class="margin-control" for="mask-margin">边缘
-                <input id="mask-margin" type="range" min="-15" max="35" step="1" value="8">
-                <span id="mask-margin-value">+8%</span>
+                <input id="mask-margin" type="range" min="-30" max="100" step="1" value="35">
+                <span id="mask-margin-value">+35%</span>
               </label>
               <label class="mask-opacity-control" for="mask-opacity">遮罩
                 <input id="mask-opacity" type="range" min="15" max="70" value="36">
@@ -355,13 +355,34 @@
               <span class="section-index">01</span>
               <div><h2 id="settings-processing">处理</h2><p>选择速度与精细程度的平衡。</p></div>
             </div>
-            <div class="setting-row">
-              <div><label for="preset">处理预设</label><p>修改会应用到下一批任务。</p></div>
-              <select id="preset">
-                <option value="balanced">均衡（推荐）</option>
-                <option value="speed">速度优先</option>
-                <option value="quality">精细处理</option>
-              </select>
+            <div class="settings-processing-body">
+              <div class="setting-row">
+                <div><label for="preset">处理预设</label><p>修改会应用到下一批任务。</p></div>
+                <select id="preset">
+                  <option value="balanced">均衡（推荐）</option>
+                  <option value="speed">速度优先</option>
+                  <option value="quality">精细处理</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div>
+                  <label for="default-mask-margin">默认边缘扩展</label>
+                  <p>自动批处理和新打开的调整编辑器都会使用此值。</p>
+                  <p id="default-mask-margin-warning" class="setting-warning" hidden>
+                    较大的扩展可能覆盖车牌周围的车身细节。
+                  </p>
+                </div>
+                <div class="margin-setting-control">
+                  <input id="default-mask-margin" type="range"
+                         min="-30" max="100" step="1" value="35"
+                         aria-describedby="default-mask-margin-warning">
+                  <label class="sr-only" for="default-mask-margin-number">边缘扩展百分比</label>
+                  <input id="default-mask-margin-number" type="number"
+                         min="-30" max="100" step="1" value="35"
+                         aria-label="默认边缘扩展百分比">
+                  <output id="default-mask-margin-value" for="default-mask-margin">+35%</output>
+                </div>
+              </div>
             </div>
           </section>
           <section class="settings-section" aria-labelledby="settings-performance">
