@@ -213,6 +213,11 @@ packages may not provide compatible wheels.
 
 ## RC4 recovery hardening
 
+- Clean GitHub `windows-2025` run
+  [30321333850](https://github.com/SARSfang/RemoveNumberPlate/actions/runs/30321333850)
+  passed at commit `06eadcb`; its single installer artifact reports product
+  version `0.2.0.4` and SHA-256
+  `2a83ae102e92f7882dc98fbec36dca1cdbb1bb2489e001975f6c5bb8fba71cd6`.
 - Startup now verifies the SQLite task-history database with
   `PRAGMA quick_check`. Only confirmed `SQLITE_CORRUPT`/`SQLITE_NOTADB`
   failures are quarantined; locks, permissions and future schemas still fail

@@ -4,6 +4,10 @@ Updated: 2026-07-28
 
 ## RC4 本地发布证据
 
+- GitHub Actions 干净构建：[30321333850](https://github.com/SARSfang/RemoveNumberPlate/actions/runs/30321333850)
+- 提交：`06eadcb53222a89bdca9423078ec86af1d7bfc5a`
+- CI 产物只有一个安装包和一份校验文件；安装包产品版本为 `0.2.0.4`。
+- CI 安装包 SHA-256：`2a83ae102e92f7882dc98fbec36dca1cdbb1bb2489e001975f6c5bb8fba71cd6`
 - 全量测试：`96 passed, 1 skipped`；代码规范、严格类型和前端语法通过。
 - 确认损坏的任务数据库会被带时间戳隔离，原始字节完整保留，并创建 `quick_check=ok` 的新数据库。
 - 数据库版本过新不会被误判为损坏或移动；无效设置文件同样保留原件后恢复默认值。
