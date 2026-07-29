@@ -1,6 +1,6 @@
 #define MyAppName "消除车牌"
-#define MyAppVersion "0.2.0-rc.7"
-#define MyNumericVersion "0.2.0.7"
+#define MyAppVersion "1.0.0"
+#define MyNumericVersion "1.0.0.0"
 #define MyAppPublisher "SARSfang"
 #define MyAppExeName "消除车牌.exe"
 

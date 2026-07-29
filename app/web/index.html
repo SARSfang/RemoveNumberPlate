@@ -33,7 +33,9 @@
       <div class="app-meta">
         <span class="offline-state"><span class="status-dot"></span>本地离线</span>
         <span class="meta-divider" aria-hidden="true"></span>
-        <span id="app-version">正在启动…</span>
+        <button id="about-button" class="about-button" type="button" title="关于本软件">
+          <span id="app-version">正在启动…</span>
+        </button>
       </div>
     </header>
 
@@ -66,6 +68,35 @@
               <span>完全离线</span>
             </div>
           </div>
+          <div id="watch-panel" class="watch-panel" hidden aria-label="监视文件夹运行中">
+            <div class="watch-radar" aria-hidden="true">
+              <span class="watch-radar-ring"></span>
+              <span class="watch-radar-ring"></span>
+              <span class="watch-radar-dot"></span>
+            </div>
+            <p class="eyebrow watch-eyebrow">自动监视中</p>
+            <h2 class="watch-title">正在监视文件夹</h2>
+            <p class="watch-sub" id="watch-sub-text">正在监视 0 个文件夹</p>
+            <div class="watch-meta">
+              <span>已捕获 <b id="watch-captured-count">0</b> 张</span>
+              <i aria-hidden="true"></i>
+              <span>已处理 <b id="watch-processed-count">0</b> 张</span>
+            </div>
+            <p class="watch-scan-hint" id="watch-scan-hint" hidden>
+              <span class="spinner" aria-hidden="true"></span>
+              正在扫描已有照片…
+              <button id="cancel-watch-scan-button" class="button button-quiet" type="button">取消扫描</button>
+            </p>
+            <div class="drop-actions">
+              <button id="watch-choose-files" class="button button-primary" type="button">
+                <img src="assets/icons/image-plus.svg" alt="">选择照片
+              </button>
+              <button id="watch-choose-folder" class="button button-secondary" type="button">
+                <img src="assets/icons/folder-open.svg" alt="">选择文件夹
+              </button>
+            </div>
+            <p class="watch-manage-hint">在<a id="watch-goto-settings" class="inline-link" href="#page-settings">设置</a>中管理监视文件夹。</p>
+          </div>
         </section>
 
         <section id="batch-workspace" class="batch-workspace" hidden>
@@ -85,7 +116,19 @@
                 <div id="progress-fill" class="progress-fill"></div>
               </div>
             </div>
+            <div class="project-selector" id="project-selector" hidden>
+              <label class="selector-label" for="current-project">当前项目</label>
+              <select id="current-project" class="select-input project-select">
+                <option value="">无项目</option>
+              </select>
+              <button id="manage-projects-button" class="button button-quiet" type="button"
+                      aria-label="管理项目">管理</button>
+            </div>
             <div class="command-actions">
+              <button id="watch-indicator" class="watch-indicator" type="button" hidden title="点击管理监视文件夹">
+                <span class="pulse-dot" aria-hidden="true"></span>
+                监视中 (<b id="watch-indicator-count">0</b>)
+              </button>
               <button id="pause-button" class="button button-secondary" type="button">
                 <img src="assets/icons/pause.svg" alt="">暂停
               </button>
@@ -313,12 +356,27 @@
             </label>
             <label class="select-field">
               <span class="sr-only">筛选任务状态</span>
-              <select id="history-filter">
+              <select id="history-filter" class="status-filter">
                 <option value="all">全部状态</option>
                 <option value="completed">已完成</option>
                 <option value="review_required">待复核</option>
                 <option value="failed">失败</option>
                 <option value="cancelled">已取消</option>
+              </select>
+            </label>
+            <label class="date-field">
+              <span class="sr-only">起始日期</span>
+              <input id="history-date-from" type="date" class="date-input">
+            </label>
+            <span class="date-separator" aria-hidden="true">—</span>
+            <label class="date-field">
+              <span class="sr-only">截止日期</span>
+              <input id="history-date-to" type="date" class="date-input">
+            </label>
+            <label class="select-field">
+              <span class="sr-only">筛选项目</span>
+              <select id="history-project-filter" class="project-filter">
+                <option value="">全部项目</option>
               </select>
             </label>
             <button id="refresh-history-button" class="button button-secondary" type="button">
@@ -401,9 +459,132 @@
               <div><dt>模型状态</dt><dd id="model-state">正在校验…</dd></div>
             </dl>
           </section>
-          <section class="settings-section" aria-labelledby="settings-data">
+          <section class="settings-section" aria-labelledby="settings-watch">
             <div class="settings-section-head">
               <span class="section-index">03</span>
+              <div><h2 id="settings-watch">监视文件夹</h2><p>登记后自动处理新增或修改的照片，仅支持本地磁盘。</p></div>
+            </div>
+            <div class="settings-section-body">
+              <div id="watch-folders-list" class="watch-folder-list">
+                <p class="watch-folder-empty">还没有登记监视文件夹。点击下方按钮添加商拍素材文件夹。</p>
+              </div>
+              <div class="settings-actions">
+                <button id="add-watch-folder-button" class="button button-secondary" type="button">
+                  <img src="assets/icons/folder-open.svg" alt="">添加监视文件夹
+                </button>
+              </div>
+            </div>
+          </section>
+          <section class="settings-section" aria-labelledby="settings-post-process">
+            <div class="settings-section-head">
+              <span class="section-index">04</span>
+              <div><h2 id="settings-post-process">批量后处理</h2><p>处理完成后自动重命名、叠加水印、填写 EXIF 元数据。</p></div>
+            </div>
+            <div class="settings-section-body">
+              <label class="settings-toggle">
+                <input type="checkbox" id="post-process-enabled">
+                <span>启用批量后处理</span>
+              </label>
+
+              <div class="post-process-group">
+                <h3>重命名</h3>
+                <label class="field-label" for="post-process-naming-template">命名模板</label>
+                <input type="text" id="post-process-naming-template" class="text-input"
+                       placeholder="{original}_clean{ext}"
+                       aria-describedby="naming-hint">
+                <p class="field-hint" id="naming-hint">占位符：{original} {ext} {seq:03} {client} {date}</p>
+                <div class="naming-preview">
+                  <span class="preview-label">预览：</span>
+                  <code id="naming-preview-text">—</code>
+                </div>
+              </div>
+
+              <div class="post-process-group">
+                <h3>水印</h3>
+                <label class="settings-toggle">
+                  <input type="checkbox" id="watermark-enabled">
+                  <span>启用水印</span>
+                </label>
+                <div class="watermark-controls" hidden>
+                  <div class="watermark-type-toggle" role="radiogroup" aria-label="水印类型">
+                    <label class="toggle-option">
+                      <input type="radio" name="watermark-type" value="text" checked>
+                      <span>文字</span>
+                    </label>
+                    <label class="toggle-option">
+                      <input type="radio" name="watermark-type" value="image">
+                      <span>图片</span>
+                    </label>
+                  </div>
+
+                  <div class="watermark-text-fields">
+                    <label class="field-label" for="watermark-text">水印文字</label>
+                    <input type="text" id="watermark-text" class="text-input" placeholder="© 2026 工作室">
+
+                    <label class="field-label" for="watermark-font-size">字号</label>
+                    <input type="number" id="watermark-font-size" class="number-input" value="24" min="8" max="200">
+
+                    <label class="field-label" for="watermark-color">颜色</label>
+                    <input type="color" id="watermark-color" value="#FFFFFF">
+                  </div>
+
+                  <div class="watermark-image-fields" hidden>
+                    <label class="field-label">水印图片</label>
+                    <div class="watermark-image-picker">
+                      <button id="watermark-image-choose" class="button button-secondary" type="button">
+                        <img src="assets/icons/image-plus.svg" alt="">选择图片
+                      </button>
+                      <span id="watermark-image-path" class="watermark-image-preview">未选择</span>
+                    </div>
+
+                    <label class="field-label" for="watermark-image-scale">缩放 <span id="watermark-image-scale-value">20%</span></label>
+                    <input type="range" id="watermark-image-scale" min="5" max="100" value="20">
+                  </div>
+
+                  <label class="field-label" for="watermark-opacity">透明度 <span id="watermark-opacity-value">70%</span></label>
+                  <input type="range" id="watermark-opacity" min="0" max="100" value="70">
+
+                  <label class="field-label" for="watermark-position">位置</label>
+                  <select id="watermark-position" class="select-input">
+                    <option value="top-left">左上</option>
+                    <option value="top-center">中上</option>
+                    <option value="top-right">右上</option>
+                    <option value="center-left">左中</option>
+                    <option value="center">居中</option>
+                    <option value="center-right">右中</option>
+                    <option value="bottom-left">左下</option>
+                    <option value="bottom-center">中下</option>
+                    <option value="bottom-right" selected>右下</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="post-process-group">
+                <h3>EXIF 元数据</h3>
+                <label class="settings-toggle">
+                  <input type="checkbox" id="exif-enabled">
+                  <span>启用 EXIF 写入</span>
+                </label>
+                <div class="exif-controls" hidden>
+                  <label class="field-label" for="exif-artist">作者 (Artist)</label>
+                  <input type="text" id="exif-artist" class="text-input" placeholder="摄影师姓名">
+
+                  <label class="field-label" for="exif-copyright">版权 (Copyright)</label>
+                  <input type="text" id="exif-copyright" class="text-input" placeholder="© 2026">
+
+                  <label class="field-label" for="exif-description">描述 (ImageDescription)</label>
+                  <input type="text" id="exif-description" class="text-input" placeholder="拍摄描述">
+                </div>
+              </div>
+
+              <div class="settings-actions">
+                <button id="save-post-process-button" class="button button-primary" type="button">保存后处理配置</button>
+              </div>
+            </div>
+          </section>
+          <section class="settings-section" aria-labelledby="settings-data">
+            <div class="settings-section-head">
+              <span class="section-index">05</span>
               <div><h2 id="settings-data">数据与支持</h2><p>照片、EXIF 和任务记录始终留在本机。</p></div>
             </div>
             <div class="settings-section-body">
@@ -435,6 +616,92 @@
         </div>
       </section>
     </div>
+
+    <div id="projects-dialog" class="dialog-backdrop" hidden>
+      <section class="dialog dialog-projects" role="dialog" aria-modal="true"
+               aria-labelledby="projects-dialog-title">
+        <header class="dialog-header">
+          <h2 id="projects-dialog-title">项目管理</h2>
+          <button id="projects-dialog-close" class="icon-button dialog-close" type="button"
+                  aria-label="关闭项目管理">×</button>
+        </header>
+        <div class="dialog-body">
+          <div id="projects-list" class="projects-list" aria-live="polite"></div>
+          <div class="project-form" id="project-form" hidden>
+            <h3 id="project-form-title">新建项目</h3>
+            <label class="field-label" for="project-name">项目名称</label>
+            <input type="text" id="project-name" class="text-input"
+                   placeholder="例如：客户A-商拍" maxlength="64">
+            <label class="field-label" for="project-preset">处理预设</label>
+            <select id="project-preset" class="select-input">
+              <option value="balanced">均衡（推荐）</option>
+              <option value="speed">速度优先</option>
+              <option value="quality">精细处理</option>
+            </select>
+            <label class="field-label" for="project-mask-margin">默认边缘扩展百分比</label>
+            <input type="number" id="project-mask-margin" class="number-input"
+                   min="-30" max="100" step="1" value="8">
+            <label class="field-label" for="project-output-mode">输出目录</label>
+            <select id="project-output-mode" class="select-input">
+              <option value="beside_source">原片旁（默认）</option>
+              <option value="project_subfolder">项目子文件夹</option>
+              <option value="fixed_directory">固定目录</option>
+            </select>
+            <label class="field-label" for="project-subfolder-name" id="project-subfolder-label" hidden>
+              子文件夹名称
+            </label>
+            <input type="text" id="project-subfolder-name" class="text-input"
+                   placeholder="已消除" hidden>
+            <label class="field-label" for="project-fixed-directory" id="project-fixed-label" hidden>
+              固定目录路径
+            </label>
+            <input type="text" id="project-fixed-directory" class="text-input"
+                   placeholder="D:/输出目录" hidden>
+          </div>
+        </div>
+        <footer class="dialog-footer">
+          <button id="cancel-project-button" class="button button-quiet" type="button" hidden>
+            取消编辑
+          </button>
+          <button id="add-project-button" class="button button-secondary" type="button">
+            新建项目
+          </button>
+          <button id="save-project-button" class="button button-primary" type="button" hidden>
+            保存项目
+          </button>
+        </footer>
+      </section>
+    </div>
+
+    <div id="about-dialog" class="dialog-backdrop" hidden>
+      <section class="dialog dialog-about" role="dialog" aria-modal="true"
+               aria-labelledby="about-dialog-title">
+        <header class="dialog-header">
+          <h2 id="about-dialog-title">关于 消除车牌</h2>
+          <button id="about-dialog-close" class="icon-button dialog-close" type="button"
+                  aria-label="关闭">×</button>
+        </header>
+        <div class="dialog-body">
+          <div class="about-brand">
+                <img src="assets/icons/scan-line.svg" alt="" class="about-icon">
+                <strong class="about-name">消除车牌</strong>
+                <span class="about-version">版本 <b id="about-version-text">—</b></span>
+              </div>
+              <p class="about-description">本地 AI 车牌消除工具，照片永不离开本机。</p>
+              <p class="about-author">作者：Fang Dian（方典）</p>
+              <p class="about-email">fangdian@tju.edu.cn</p>
+              <p class="about-copyright">© 2026 Fang Dian（方典）. 保留所有权利。</p>
+              <ul class="about-meta">
+                <li>AI 引擎：<b id="about-runtime">—</b></li>
+                <li>数据库 schema：<b id="about-schema">—</b></li>
+                <li>许可：本地离线使用</li>
+              </ul>
+        </div>
+        <footer class="dialog-footer">
+          <button id="about-dialog-ok" class="button button-primary" type="button">确定</button>
+        </footer>
+      </section>
+    </div>
     <div id="live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </div>
@@ -443,11 +710,13 @@
   <script defer src="core/bridge.js"></script>
   <script defer src="components/toast.js"></script>
   <script defer src="components/dialog.js"></script>
+  <script defer src="components/about.js"></script>
   <script defer src="batch/preview.js"></script>
   <script defer src="batch/filmstrip.js"></script>
   <script defer src="batch/workspace.js"></script>
   <script defer src="review/editor.js"></script>
   <script defer src="history/history.js"></script>
+  <script defer src="projects/projects.js"></script>
   <script defer src="settings/settings.js"></script>
   <script defer src="core/shortcuts.js"></script>
   <script defer src="app.js"></script>

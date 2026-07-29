@@ -39,12 +39,52 @@ function loadSettingsModule() {
     "#default-mask-margin-number",
     "#default-mask-margin-value",
     "#default-mask-margin-warning",
-    "#export-diagnostics-button"
+    "#export-diagnostics-button",
+    "#post-process-enabled",
+    "#post-process-naming-template",
+    "#naming-preview-text",
+    "#watermark-enabled",
+    "#watermark-text",
+    "#watermark-font-size",
+    "#watermark-color",
+    "#watermark-opacity",
+    "#watermark-opacity-value",
+    "#watermark-position",
+    "#watermark-image-choose",
+    "#watermark-image-path",
+    "#watermark-image-scale",
+    "#watermark-image-scale-value",
+    "#exif-enabled",
+    "#exif-artist",
+    "#exif-copyright",
+    "#exif-description",
+    "#save-post-process-button",
+    ".watermark-controls",
+    ".watermark-text-fields",
+    ".watermark-image-fields",
+    ".exif-controls"
   ];
   const elements = Object.fromEntries(selectors.map((selector) => [
     selector,
     createElement()
   ]));
+  // Radio inputs need a `checked` flag and `value`. Setting `checked = true`
+  // on one radio in the group should deselect the other (mimics browser
+  // behavior for inputs with the same `name`).
+  const textRadio = createElement();
+  textRadio.value = "text";
+  const imageRadio = createElement();
+  imageRadio.value = "image";
+  let selectedType = "text";
+  Object.defineProperty(textRadio, "checked", {
+    get() { return selectedType === "text"; },
+    set(value) { if (value) selectedType = "text"; }
+  });
+  Object.defineProperty(imageRadio, "checked", {
+    get() { return selectedType === "image"; },
+    set(value) { if (value) selectedType = "image"; }
+  });
+  const radioByName = { text: textRadio, image: imageRadio };
   const calls = [];
   const context = {
     window: {
@@ -60,15 +100,28 @@ function loadSettingsModule() {
     },
     document: {
       querySelector(selector) {
+        if (selector.startsWith("input[name=") || selector.startsWith("input[name='")) {
+          if (selector.includes('[value="text"]')) return textRadio;
+          if (selector.includes('[value="image"]')) return imageRadio;
+          return selectedType === "image" ? imageRadio : textRadio;
+        }
         return elements[selector];
       },
-      querySelectorAll() {
+      querySelectorAll(selector) {
+        if (selector === 'input[name="watermark-type"]') {
+          return [textRadio, imageRadio];
+        }
         return [];
       }
     }
   };
   vm.runInNewContext(source, context);
-  return { calls, elements, settings: context.window.PlateApp.settings };
+  return {
+    calls,
+    elements,
+    radioByName,
+    settings: context.window.PlateApp.settings
+  };
 }
 
 test("global mask margin hydrates, warns, and saves as a percentage", async () => {
@@ -115,4 +168,107 @@ test("all stylesheet custom-property references are defined", () => {
     [...references].filter((name) => !definitions.has(name)),
     []
   );
+});
+
+test("watermark type image hydrates and toggles image fields visible", () => {
+  const fixture = loadSettingsModule();
+  fixture.settings.init();
+  fixture.settings.hydrate({
+    gpu: "GPU",
+    runtime: "ONNX",
+    models_ready: true,
+    webview2_version: "138",
+    preset: "balanced",
+    mask_margin_percent: 35,
+    post_process_config: {
+      enabled: true,
+      watermark: {
+        enabled: true,
+        type: "image",
+        image_path: "C:/logos/watermark.png",
+        image_scale: 0.5,
+        opacity: 0.6,
+        position: "center"
+      }
+    }
+  });
+
+  const imagePath = fixture.elements["#watermark-image-path"];
+  const imageScale = fixture.elements["#watermark-image-scale"];
+  const imageScaleValue = fixture.elements["#watermark-image-scale-value"];
+  const textFields = fixture.elements[".watermark-text-fields"];
+  const imageFields = fixture.elements[".watermark-image-fields"];
+
+  assert.equal(imagePath.dataset.path, "C:/logos/watermark.png");
+  assert.equal(imageScale.value, "50");
+  assert.equal(imageScaleValue.textContent, "50%");
+  assert.equal(textFields.hidden, true);
+  assert.equal(imageFields.hidden, false);
+});
+
+test("watermark type text keeps text fields visible and hides image fields", () => {
+  const fixture = loadSettingsModule();
+  fixture.settings.init();
+  fixture.settings.hydrate({
+    gpu: "GPU",
+    runtime: "ONNX",
+    models_ready: true,
+    webview2_version: "138",
+    preset: "balanced",
+    mask_margin_percent: 35,
+    post_process_config: {
+      enabled: true,
+      watermark: {
+        enabled: true,
+        type: "text",
+        text: "© acme"
+      }
+    }
+  });
+
+  const textFields = fixture.elements[".watermark-text-fields"];
+  const imageFields = fixture.elements[".watermark-image-fields"];
+  assert.equal(textFields.hidden, false);
+  assert.equal(imageFields.hidden, true);
+});
+
+test("collectPostProcessConfig includes watermark type, image_path, image_scale", () => {
+  const fixture = loadSettingsModule();
+  fixture.settings.init();
+  fixture.settings.hydrate({
+    gpu: "GPU",
+    runtime: "ONNX",
+    models_ready: true,
+    webview2_version: "138",
+    preset: "balanced",
+    mask_margin_percent: 35,
+    post_process_config: {
+      enabled: true,
+      watermark: {
+        enabled: true,
+        type: "image",
+        image_path: "/tmp/logo.png",
+        image_scale: 0.3
+      }
+    }
+  });
+
+  // Mock collectPostProcessConfig via a direct call by saving post process
+  // settings: the save handler invokes bridge.call with the collected payload.
+  const saveButton = fixture.elements["#save-post-process-button"];
+  saveButton.listeners.click({ currentTarget: saveButton });
+
+  // Wait for the async handler to push the call.
+  // node:test runs synchronous code in the same tick; we need to await microtasks.
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const call = fixture.calls.find((entry) => entry[0] === "set_post_process_config");
+      assert.ok(call, "expected set_post_process_config call");
+      const payload = call[1];
+      assert.equal(payload.watermark.type, "image");
+      assert.equal(payload.watermark.image_path, "/tmp/logo.png");
+      assert.equal(payload.watermark.image_scale, 0.3);
+      resolve();
+    }, 0);
+  });
 });

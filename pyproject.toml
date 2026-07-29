@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "remove-number-plate"
-version = "0.2.0rc7"
+version = "1.0.0"
 description = "Offline batch license-plate removal for automotive photographers"
 requires-python = ">=3.11,<3.13"
 dependencies = [
@@ -24,6 +24,7 @@ addopts = "-ra"
 testpaths = ["tests"]
 markers = [
     "model: requires locally installed model artifacts and an inference runtime",
+    "slow: slow integration tests that touch the real Windows filesystem",
 ]
 
 [tool.ruff]

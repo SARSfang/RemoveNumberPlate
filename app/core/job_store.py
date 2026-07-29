@@ -14,7 +14,7 @@ from app.domain.detection import BoundingBox, Detection, Quadrilateral
 from app.domain.job import JobStatus, RiskReason
 from app.domain.result import ProcessingResult
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 7
 INTERRUPTED_STATUSES = (
     JobStatus.DETECTING,
     JobStatus.INPAINTING,
@@ -72,6 +72,10 @@ class StoredJob:
     elapsed_seconds: float | None
     created_at: str
     updated_at: str
+    file_mtime: float | None = None
+    file_size: int | None = None
+    post_processed_output: str | None = None
+    project_id: str | None = None
 
 
 class JobStore:
@@ -112,7 +116,22 @@ class JobStore:
                     error TEXT,
                     elapsed_seconds REAL,
                     created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+                    updated_at TEXT NOT NULL,
+                    file_mtime REAL,
+                    file_size INTEGER,
+                    post_processed_output TEXT,
+                    project_id TEXT REFERENCES projects(id) ON DELETE SET NULL
+                )
+                """
+            )
+            self._connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS projects (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    preset_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    last_used_at TEXT
                 )
                 """
             )
@@ -168,10 +187,47 @@ class JobStore:
                         self._connection.execute(
                             "ALTER TABLE detections ADD COLUMN polygon_json TEXT"
                         )
+                if current_version < 5:
+                    job_columns_v5 = {
+                        str(column["name"])
+                        for column in self._connection.execute("PRAGMA table_info(jobs)")
+                    }
+                    if "file_mtime" not in job_columns_v5:
+                        self._connection.execute(
+                            "ALTER TABLE jobs ADD COLUMN file_mtime REAL"
+                        )
+                    if "file_size" not in job_columns_v5:
+                        self._connection.execute(
+                            "ALTER TABLE jobs ADD COLUMN file_size INTEGER"
+                        )
+                if current_version < 6:
+                    job_columns_v6 = {
+                        str(column["name"])
+                        for column in self._connection.execute("PRAGMA table_info(jobs)")
+                    }
+                    if "post_processed_output" not in job_columns_v6:
+                        self._connection.execute(
+                            "ALTER TABLE jobs ADD COLUMN post_processed_output TEXT"
+                        )
+                if current_version < 7:
+                    job_columns_v7 = {
+                        str(column["name"])
+                        for column in self._connection.execute("PRAGMA table_info(jobs)")
+                    }
+                    if "project_id" not in job_columns_v7:
+                        self._connection.execute(
+                            "ALTER TABLE jobs ADD COLUMN project_id TEXT "
+                            "REFERENCES projects(id) ON DELETE SET NULL"
+                        )
                 self._connection.execute(
                     "UPDATE schema_info SET version = ?",
                     (SCHEMA_VERSION,),
                 )
+            self._connection.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_jobs_project_id ON jobs(project_id)
+                """
+            )
 
     def close(self) -> None:
         self._connection.close()
@@ -188,16 +244,47 @@ class JobStore:
     def __exit__(self, *_args: object) -> None:
         self.close()
 
-    def create_job(self, source: Path) -> str:
+    def create_job(
+        self,
+        source: Path,
+        *,
+        file_mtime: float | None = None,
+        file_size: int | None = None,
+        post_processed_output: str | None = None,
+        project_id: str | None = None,
+    ) -> str:
         identifier = str(uuid4())
         timestamp = datetime.now(UTC).isoformat()
+        # 若调用方未提供文件元数据，则尝试从 source 读取（best-effort，失败留空）
+        if file_mtime is None or file_size is None:
+            try:
+                stat = source.stat()
+                if file_mtime is None:
+                    file_mtime = float(stat.st_mtime)
+                if file_size is None:
+                    file_size = int(stat.st_size)
+            except OSError:
+                pass
         with self._connection:
             self._connection.execute(
                 """
-                INSERT INTO jobs(id, source, status, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO jobs(
+                    id, source, status, created_at, updated_at,
+                    file_mtime, file_size, post_processed_output, project_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (identifier, str(source.resolve()), JobStatus.QUEUED.value, timestamp, timestamp),
+                (
+                    identifier,
+                    str(source.resolve()),
+                    JobStatus.QUEUED.value,
+                    timestamp,
+                    timestamp,
+                    file_mtime,
+                    file_size,
+                    post_processed_output,
+                    project_id,
+                ),
             )
         return identifier
 
@@ -279,6 +366,34 @@ class JobStore:
             )
         return cursor.rowcount
 
+    def set_post_processed_output(
+        self,
+        identifier: str,
+        post_processed_output: str | None,
+    ) -> None:
+        """Record the final post-processed output path for a job.
+
+        Called by the post-processor after rename/watermark/EXIF complete.
+        Pass ``None`` to clear the field (e.g. when post-processing is disabled
+        or falls back to the original removal output).
+        """
+
+        with self._connection:
+            cursor = self._connection.execute(
+                """
+                UPDATE jobs
+                SET post_processed_output = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    post_processed_output,
+                    datetime.now(UTC).isoformat(),
+                    identifier,
+                ),
+            )
+        if cursor.rowcount != 1:
+            raise KeyError(identifier)
+
     def list_jobs(
         self,
         statuses: tuple[JobStatus, ...] | None = None,
@@ -295,7 +410,8 @@ class JobStore:
         rows = self._connection.execute(
             f"""
             SELECT id, source, output, status, risks_json, error,
-                   elapsed_seconds, created_at, updated_at
+                   elapsed_seconds, created_at, updated_at, file_mtime, file_size,
+                   post_processed_output, project_id
             FROM jobs {where}
             ORDER BY created_at DESC
             LIMIT ?
@@ -308,13 +424,35 @@ class JobStore:
         row = self._connection.execute(
             """
             SELECT id, source, output, status, risks_json, error,
-                   elapsed_seconds, created_at, updated_at
+                   elapsed_seconds, created_at, updated_at, file_mtime, file_size,
+                   post_processed_output, project_id
             FROM jobs WHERE id = ?
             """,
             (identifier,),
         ).fetchone()
         if row is None:
             raise KeyError(identifier)
+        return self._stored_job_from_row(row)
+
+    def get_latest_by_source(self, source: str) -> StoredJob | None:
+        """返回指定 source 路径最近一条 job 记录，无则 None。
+
+        用于监视文件夹去重：比较 source 路径字符串（已 resolve），
+        按 created_at DESC 排序取第一条。
+        """
+        row = self._connection.execute(
+            """
+            SELECT id, source, output, status, risks_json, error,
+                   elapsed_seconds, created_at, updated_at, file_mtime, file_size,
+                   post_processed_output, project_id
+            FROM jobs WHERE source = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (source,),
+        ).fetchone()
+        if row is None:
+            return None
         return self._stored_job_from_row(row)
 
     def _stored_job_from_row(self, row: sqlite3.Row) -> StoredJob:
@@ -369,6 +507,24 @@ class JobStore:
             ),
             created_at=str(row["created_at"]),
             updated_at=str(row["updated_at"]),
+            file_mtime=(
+                float(row["file_mtime"])
+                if row["file_mtime"] is not None
+                else None
+            ),
+            file_size=(
+                int(row["file_size"])
+                if row["file_size"] is not None
+                else None
+            ),
+            post_processed_output=(
+                str(row["post_processed_output"])
+                if row["post_processed_output"]
+                else None
+            ),
+            project_id=(
+                str(row["project_id"]) if row["project_id"] else None
+            ),
         )
 
     def record_mask_revision(

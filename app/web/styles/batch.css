@@ -534,6 +534,180 @@
   gap: 8px;
 }
 
+/* Watch folder empty-state panel (spec v0.3.0 §5.2) */
+.watch-panel {
+  height: 100%;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--space-8);
+  border: 1px dashed var(--accent-border);
+  border-radius: var(--radius-4);
+  background: var(--accent-soft);
+  text-align: center;
+}
+
+.watch-radar {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+}
+
+.watch-radar-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--accent-border);
+  border-radius: 50%;
+  opacity: .6;
+}
+
+.watch-radar-ring + .watch-radar-ring {
+  inset: 12px;
+  opacity: .4;
+}
+
+.watch-radar-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.watch-eyebrow {
+  color: var(--accent-hover);
+}
+
+.watch-title {
+  font-size: 28px;
+  letter-spacing: -.035em;
+}
+
+.watch-sub {
+  color: var(--text-muted);
+  font-size: var(--font-lg);
+}
+
+.watch-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--text-quiet);
+  font-size: var(--font-sm);
+}
+
+.watch-meta b {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.watch-meta i {
+  width: 1px;
+  height: 12px;
+  background: var(--border);
+}
+
+.watch-scan-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+}
+
+.watch-manage-hint {
+  margin-top: 18px;
+  color: var(--text-quiet);
+  font-size: var(--font-sm);
+}
+
+.inline-link {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* Command bar pulse badge (spec v0.3.0 §5.3) */
+.watch-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: var(--button-height);
+  padding: 0 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-2);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 650;
+}
+
+.watch-indicator:hover {
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--surface-hover));
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 var(--accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pulse-dot {
+    animation: watch-pulse 1.6s ease-out infinite;
+  }
+
+  .watch-radar-ring {
+    animation: watch-radar-pulse 2.4s ease-out infinite;
+  }
+
+  .watch-radar-ring + .watch-radar-ring {
+    animation-delay: 1.2s;
+  }
+
+  .spinner {
+    animation: watch-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes watch-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes watch-radar-pulse {
+  0% { transform: scale(.6); opacity: .6; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+@keyframes watch-spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 1179px) {
   :root {
     --inspector-width: 0px;
@@ -655,6 +829,10 @@
   }
 
   .batch-footer span:last-child {
+    display: none;
+  }
+
+  #watch-indicator {
     display: none;
   }
 }

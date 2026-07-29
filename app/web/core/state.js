@@ -28,9 +28,26 @@
       previewMode: "following",
       preferredVariant: "result",
       modelsReady: false,
-      bootstrap: null
+      bootstrap: null,
+      // Watch folder state (spec v0.3.0 §5.4). watchActive is derived in
+      // renderState from watchFolderCount + watchFolders, so it isn't stored.
+      watchFolders: [],
+      watchFolderCount: 0,
+      watchCaptured: 0,
+      watchProcessed: 0,
+      watchScanInProgress: false
     };
   }
+
+  // Fields that must survive a batch_accepted reset (watch state is
+  // independent of the current batch lifecycle).
+  const WATCH_PRESERVE = [
+    "watchFolders",
+    "watchFolderCount",
+    "watchCaptured",
+    "watchProcessed",
+    "watchScanInProgress"
+  ];
 
   function cloneJob(value) {
     return {
@@ -58,13 +75,18 @@
     const state = current || initialState();
     const payload = event && event.payload ? event.payload : {};
     switch (event && event.name) {
-      case "batch_accepted":
-        return {
+      case "batch_accepted": {
+        const reset = {
           ...initialState(),
           running: true,
           modelsReady: state.modelsReady,
           bootstrap: state.bootstrap
         };
+        WATCH_PRESERVE.forEach((key) => {
+          reset[key] = state[key];
+        });
+        return reset;
+      }
       case "batch_discovered":
         return { ...state, total: Number(payload.total || 0) };
       case "batch_items_ready": {
@@ -103,6 +125,20 @@
           paused: false,
           processingId: null
         };
+      case "watch_status":
+        return {
+          ...state,
+          watchFolderCount: Number(payload.active_count || 0),
+          watchCaptured: Number(payload.captured || 0),
+          watchProcessed: Number(payload.processed || 0)
+        };
+      case "watch_scan_started":
+        return { ...state, watchScanInProgress: true };
+      case "watch_scan_complete":
+        return { ...state, watchScanInProgress: false };
+      case "watch_folder_error":
+        // Toast + settings re-render happen in workspace.js; state unchanged.
+        return state;
       default:
         return state;
     }
@@ -124,6 +160,17 @@
       else result.active += 1;
     });
     return result;
+  }
+
+  // Derive whether watching is active: either the backend reports active
+  // watchers (watchFolderCount > 0 from watch_status), or bootstrap/settings
+  // know of at least one enabled, error-free folder (covers the window
+  // before the first watch_status event arrives).
+  function watchActive(state) {
+    if (state.watchFolderCount > 0) return true;
+    return Array.isArray(state.watchFolders) && state.watchFolders.some(
+      (folder) => folder.enabled && !folder.error
+    );
   }
 
   function createStore(seed) {
@@ -193,6 +240,7 @@
     counts,
     createStore,
     initialState,
-    reduceBackendEvent
+    reduceBackendEvent,
+    watchActive
   };
 });

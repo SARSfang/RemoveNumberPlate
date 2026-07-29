@@ -362,7 +362,696 @@
   padding: 16px 22px 22px;
 }
 
+/* Watch folder management (settings §03, spec v0.3.0) */
+.watch-folder-list {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.watch-folder-empty {
+  margin: 0;
+  color: var(--text-quiet);
+  font-size: var(--font-sm);
+}
+
+.watch-folder-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: var(--canvas-subtle);
+}
+
+.watch-folder-row.is-error {
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
+}
+
+.watch-folder-row.is-disabled .watch-folder-path-main {
+  color: var(--text-muted);
+}
+
+.watch-folder-path {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.watch-folder-path-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+}
+
+.watch-folder-error {
+  color: var(--danger);
+  font-size: var(--font-xs);
+}
+
+.watch-folder-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.watch-folder-toggle input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.watch-folder-remove {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-1);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-sm);
+}
+
+.watch-folder-remove:hover {
+  border-color: var(--danger-border);
+  background: var(--danger-surface-hover);
+  color: var(--danger-text);
+}
+
+/* Batch post-processing (settings §04, spec v0.3.0 sub-spec 2) */
+.settings-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  color: var(--text-secondary);
+  font-size: var(--font-md);
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-toggle input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.post-process-group {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: var(--canvas-subtle);
+  display: grid;
+  gap: 8px;
+}
+
+.post-process-group h3 {
+  margin: 0 0 4px;
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.post-process-group .field-label {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.post-process-group .field-label + .text-input,
+.post-process-group .field-label + .number-input,
+.post-process-group .field-label + .select-input,
+.post-process-group .field-label + input[type="color"],
+.post-process-group .field-label + input[type="range"] {
+  margin-top: 4px;
+}
+
+.post-process-group .field-hint {
+  margin: 2px 0 0;
+  color: var(--text-quiet);
+  font-size: var(--font-xs);
+}
+
+.text-input,
+.number-input,
+.select-input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-1);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--font-md);
+}
+
+.text-input:focus-visible,
+.number-input:focus-visible,
+.select-input:focus-visible {
+  border-color: var(--accent-border);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.number-input {
+  width: 120px;
+}
+
+.select-input {
+  min-width: 160px;
+}
+
+.post-process-group input[type="color"] {
+  width: 64px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-1);
+  background: var(--surface-raised);
+  cursor: pointer;
+}
+
+.post-process-group input[type="range"] {
+  width: 100%;
+  max-width: 280px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.naming-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-1);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+}
+
+.naming-preview .preview-label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.naming-preview code {
+  color: var(--accent-hover);
+  font-family: inherit;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.watermark-controls,
+.exif-controls {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.watermark-controls[hidden],
+.exif-controls[hidden] {
+  display: none;
+}
+
+/* Watermark type toggle (segmented control: text / image) */
+.watermark-type-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2);
+  background: var(--canvas-subtle);
+}
+
+.watermark-type-toggle .toggle-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: calc(var(--radius-2) - 2px);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--duration-base), color var(--duration-base);
+}
+
+.watermark-type-toggle .toggle-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+
+.watermark-type-toggle .toggle-option:has(input:checked) {
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  box-shadow: 0 0 0 1px var(--accent-border);
+}
+
+.watermark-text-fields[hidden],
+.watermark-image-fields[hidden] {
+  display: none;
+}
+
+.watermark-image-fields {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.watermark-image-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.watermark-image-preview {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-2);
+  background: var(--canvas-subtle);
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* About dialog (version + copyright) */
+.dialog-about {
+  width: min(440px, calc(100vw - 48px));
+  padding: 0;
+}
+
+.dialog-about .dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dialog-about .dialog-header h2 {
+  font-size: var(--font-xl);
+}
+
+.dialog-about .dialog-close {
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  color: var(--text-muted);
+  display: grid;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-2);
+}
+
+.dialog-about .dialog-close:hover {
+  background: var(--canvas-subtle);
+  color: var(--text-secondary);
+}
+
+.dialog-about .dialog-body {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+}
+
+.dialog-about .about-brand {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.dialog-about .about-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.dialog-about .about-name {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.dialog-about .about-version {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.dialog-about .about-version b {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.dialog-about .about-copyright {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.dialog-about .about-description {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.dialog-about .about-author {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dialog-about .about-email {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.dialog-about .about-meta {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 12px 16px;
+  list-style: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: var(--canvas-subtle);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.dialog-about .about-meta b {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.dialog-about .dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--canvas-subtle);
+}
+
+/* Top bar About button (icon button) */
+.about-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  transition: background var(--duration-base), color var(--duration-base);
+}
+
+.about-button:hover {
+  background: var(--canvas-subtle);
+  color: var(--text-secondary);
+}
+
+.about-button:focus-visible {
+  border-color: var(--accent-border);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
 .history-detail-close {
+  display: none;
+}
+
+/* History toolbar extensions: date range + project filter (spec v0.3.0 §4) */
+.history-toolbar .date-field {
+  display: flex;
+  align-items: center;
+}
+
+.history-toolbar .date-input {
+  min-width: 140px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--font-sm);
+}
+
+.history-toolbar .date-input:focus-visible {
+  border-color: var(--accent-border);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.history-toolbar .date-separator {
+  color: var(--text-quiet);
+  font-size: var(--font-sm);
+}
+
+.history-toolbar .project-filter {
+  min-width: 140px;
+}
+
+/* Project selector in the batch command bar (spec v0.3.0 §3) */
+.project-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: var(--canvas-subtle);
+}
+
+.project-selector[hidden] {
+  display: none;
+}
+
+.project-selector .selector-label {
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.project-selector .project-select {
+  min-width: 140px;
+  min-height: 32px;
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-1);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--font-sm);
+}
+
+.project-selector .project-select:focus-visible {
+  border-color: var(--accent-border);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Project management dialog (spec v0.3.0 §3) */
+.dialog-projects {
+  width: min(560px, calc(100vw - 48px));
+  padding: 0;
+}
+
+.dialog-projects .dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dialog-projects .dialog-header h2 {
+  font-size: var(--font-xl);
+}
+
+.dialog-projects .dialog-close {
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  color: var(--text-muted);
+}
+
+.dialog-projects .dialog-body {
+  max-height: 60vh;
+  overflow: auto;
+  padding: 18px 22px;
+}
+
+.dialog-projects .dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--canvas-subtle);
+}
+
+.dialog-projects .dialog-footer button[hidden] {
+  display: none;
+}
+
+#projects-dialog .dialog-close,
+.dialog-projects .dialog-close {
+  display: grid;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dialog-projects .projects-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dialog-projects .projects-empty {
+  padding: 24px 0;
+  color: var(--text-quiet);
+  text-align: center;
+  font-size: var(--font-sm);
+}
+
+.dialog-projects .project-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: var(--canvas-subtle);
+}
+
+.dialog-projects .project-row.is-current {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+
+.dialog-projects .project-row-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dialog-projects .project-row-name {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialog-projects .project-row-meta {
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+.dialog-projects .project-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dialog-projects .project-row-actions button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-1);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-sm);
+}
+
+.dialog-projects .project-row-actions button:hover {
+  border-color: var(--border);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.dialog-projects .project-row-actions .project-delete:hover {
+  border-color: var(--danger-border);
+  background: var(--danger-surface-hover);
+  color: var(--danger-text);
+}
+
+.dialog-projects .project-form {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-2);
+  background: var(--surface);
+  display: grid;
+  gap: 8px;
+}
+
+.dialog-projects .project-form[hidden] {
+  display: none;
+}
+
+.dialog-projects .project-form h3 {
+  margin: 0 0 4px;
+  font-size: var(--font-md);
+  font-weight: 700;
+}
+
+.dialog-projects .project-form .field-label {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.dialog-projects .project-form .field-label[hidden] {
+  display: none;
+}
+
+.dialog-projects .project-form .text-input,
+.dialog-projects .project-form .select-input,
+.dialog-projects .project-form .number-input {
+  width: 100%;
+}
+
+.dialog-projects .project-form .text-input[hidden],
+.dialog-projects .project-form .select-input[hidden],
+.dialog-projects .project-form .number-input[hidden] {
   display: none;
 }
 
@@ -406,5 +1095,17 @@
 
   .history-detail h2 {
     padding-right: 42px;
+  }
+
+  /* On small screens, wrap the history toolbar so all filters remain
+     accessible without horizontal scrolling. */
+  .history-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .history-toolbar .date-input,
+  .history-toolbar .project-filter {
+    min-width: 0;
+    flex: 1 1 140px;
   }
 }

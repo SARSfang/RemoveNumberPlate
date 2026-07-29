@@ -2,8 +2,9 @@
   "use strict";
   const PlateApp = window.PlateApp = window.PlateApp || {};
   const $ = (selector) => document.querySelector(selector);
-  const state = { jobs: [], selectedId: null };
+  const state = { jobs: [], total: 0, selectedId: null, lastQuery: null };
   let refreshSerial = 0;
+  let searchDebounce = null;
 
   const LABELS = {
     queued: "排队中",
@@ -30,19 +31,45 @@
     return button;
   }
 
-  function visibleJobs() {
-    const query = $("#history-search").value.trim().toLocaleLowerCase("zh-CN");
-    const filter = $("#history-filter").value;
-    return state.jobs.filter((job) => {
-      const matchesQuery = !query || job.name.toLocaleLowerCase("zh-CN").includes(query);
-      const matchesStatus = filter === "all" || job.status === filter;
-      return matchesQuery && matchesStatus;
-    });
-  }
-
   function formatDate(value) {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("zh-CN");
+  }
+
+  function buildProjectNameMap() {
+    if (!PlateApp.projects || typeof PlateApp.projects.getProjects !== "function") {
+      return new Map();
+    }
+    const map = new Map();
+    PlateApp.projects.getProjects().forEach((project) => {
+      map.set(project.id, project.name);
+    });
+    return map;
+  }
+
+  function collectQuery() {
+    const nameContains = $("#history-search").value.trim();
+    const statusValue = $("#history-filter").value;
+    const dateFrom = $("#history-date-from").value;
+    const dateTo = $("#history-date-to").value;
+    const projectId = $("#history-project-filter").value;
+    const query = {
+      name_contains: nameContains,
+      date_from: dateFrom || null,
+      date_to: dateTo || null
+    };
+    if (statusValue !== "all") {
+      query.statuses = [statusValue];
+    }
+    if (projectId) {
+      query.project_ids = [projectId];
+      // Keep include_no_project default (True) so users can still see jobs
+      // that lost their project alongside the filtered one — but only when
+      // no specific project is selected. When a project is selected, hide
+      // no-project rows so the user sees exactly that project's jobs.
+      query.include_no_project = false;
+    }
+    return query;
   }
 
   function closeDetail() {
@@ -90,13 +117,18 @@
     status.className = `status status-${job.status}`;
     status.textContent = LABELS[job.status] || job.status;
     const facts = document.createElement("dl");
+    const projectNameMap = buildProjectNameMap();
+    const projectName = job.project_id
+      ? (projectNameMap.get(job.project_id) || "已删除项目")
+      : "无";
     [
       ["更新时间", formatDate(job.updated_at)],
       ["处理耗时", job.elapsed == null ? "—" : `${Number(job.elapsed).toFixed(2)} 秒`],
       ["识别区域", `${Number(job.detection_count || 0)} 处`],
       ["风险", job.risks && job.risks.length ? `${job.risks.length} 项` : "无"],
       ["原图", job.source_available ? "可用" : "已移动"],
-      ["输出", job.output_available ? "可用" : "未生成"]
+      ["输出", job.output_available ? "可用" : "未生成"],
+      ["项目", projectName]
     ].forEach(([term, value]) => {
       const row = document.createElement("div");
       const dt = document.createElement("dt");
@@ -151,7 +183,7 @@
   }
 
   function render() {
-    const jobs = visibleJobs();
+    const jobs = state.jobs;
     if (state.selectedId && !jobs.some((job) => job.id === state.selectedId)) {
       state.selectedId = null;
     }
@@ -160,13 +192,13 @@
     }
     const rows = $("#history-rows");
     rows.replaceChildren();
-    $("#history-total").textContent = state.jobs.length;
+    $("#history-total").textContent = String(state.total ?? jobs.length);
     if (!jobs.length) {
       const row = document.createElement("tr");
       row.className = "empty-row";
       const cell = document.createElement("td");
       cell.colSpan = 4;
-      cell.textContent = state.jobs.length
+      cell.textContent = state.total
         ? "没有符合筛选条件的任务。"
         : "还没有本机任务记录。";
       row.appendChild(cell);
@@ -220,16 +252,27 @@
   }
 
   async function refresh() {
-    if (!PlateApp.bridge.api() || !PlateApp.bridge.api().list_history) return;
+    // Spec v0.3.0 §4: prefer search_history when available so the backend
+    // can apply date/project filters that list_history ignores.
+    if (!PlateApp.bridge.api()) return;
+    const hasSearch = typeof PlateApp.bridge.api().search_history === "function";
+    if (!hasSearch && typeof PlateApp.bridge.api().list_history !== "function") {
+      return;
+    }
     const serial = ++refreshSerial;
     const workspace = $("#history-workspace");
     const refreshButton = $("#refresh-history-button");
     workspace.setAttribute("aria-busy", "true");
     refreshButton.disabled = true;
     try {
-      const jobs = await PlateApp.bridge.call("list_history", 100);
+      const query = collectQuery();
+      state.lastQuery = query;
+      const response = hasSearch
+        ? await PlateApp.bridge.call("search_history", query)
+        : { jobs: await PlateApp.bridge.call("list_history", 100), total: 0 };
       if (serial !== refreshSerial) return;
-      state.jobs = jobs;
+      state.jobs = response.jobs || [];
+      state.total = hasSearch ? (response.total ?? state.jobs.length) : state.jobs.length;
       if (state.selectedId && !state.jobs.some((job) => job.id === state.selectedId)) {
         state.selectedId = null;
       }
@@ -248,10 +291,21 @@
     }
   }
 
+  function scheduleSearch() {
+    if (searchDebounce) clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+      searchDebounce = null;
+      refresh();
+    }, 300);
+  }
+
   function init() {
     $("#refresh-history-button").addEventListener("click", refresh);
-    $("#history-search").addEventListener("input", render);
-    $("#history-filter").addEventListener("change", render);
+    $("#history-search").addEventListener("input", scheduleSearch);
+    $("#history-filter").addEventListener("change", refresh);
+    $("#history-date-from").addEventListener("change", refresh);
+    $("#history-date-to").addEventListener("change", refresh);
+    $("#history-project-filter").addEventListener("change", refresh);
     document.addEventListener("keydown", (event) => {
       if (
         event.key === "Escape" &&

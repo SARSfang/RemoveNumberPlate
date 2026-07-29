@@ -1,26 +1,26 @@
 :root {
-  color-scheme: dark;
+  color-scheme: dark light;
 
   /* Primitive */
-  --ink-950: #070b12;
-  --ink-925: #0a1019;
-  --ink-900: #0d1420;
-  --ink-875: #111a28;
-  --ink-850: #152031;
-  --ink-800: #1a2739;
-  --ink-750: #223249;
-  --ink-700: #2d405b;
-  --slate-500: #77879d;
-  --slate-400: #97a6b9;
-  --slate-300: #b8c4d3;
-  --slate-100: #eef3f9;
-  --blue-650: #2b69e8;
-  --blue-600: #3478f6;
-  --blue-500: #4e8bff;
-  --blue-300: #9cbdff;
-  --green-500: #3ac89b;
-  --amber-500: #e9b153;
-  --red-500: #ef717a;
+  --ink-950: #0a0a0a;
+  --ink-925: #0f0f0f;
+  --ink-900: #141414;
+  --ink-875: #1a1a1a;
+  --ink-850: #222222;
+  --ink-800: #262626;
+  --ink-750: #2a2a2a;
+  --ink-700: #3a3a3a;
+  --slate-500: #737373;
+  --slate-400: #a3a3a3;
+  --slate-300: #d4d4d4;
+  --slate-100: #ffffff;
+  --blue-650: #1e40af;
+  --blue-600: #3b82f6;
+  --blue-500: #60a5fa;
+  --blue-300: #93c5fd;
+  --green-500: #22c55e;
+  --amber-500: #eab308;
+  --red-500: #ef4444;
   --white: #ffffff;
 
   --space-1: 4px;
@@ -47,14 +47,14 @@
   --duration-fast: 120ms;
   --duration-base: 180ms;
 
-  /* Semantic */
+  /* Semantic — 暗色主题（默认） */
   --canvas: var(--ink-950);
   --canvas-subtle: var(--ink-925);
   --surface: var(--ink-900);
   --surface-raised: var(--ink-875);
   --surface-strong: var(--ink-850);
   --surface-hover: var(--ink-800);
-  --border-subtle: var(--ink-800);
+  --border-subtle: #1f1f1f;
   --border: var(--ink-750);
   --border-strong: var(--ink-700);
   --text: var(--slate-100);
@@ -63,23 +63,23 @@
   --text-quiet: var(--slate-500);
   --accent: var(--blue-600);
   --accent-hover: var(--blue-500);
-  --accent-soft: #102b57;
-  --accent-border: #2e6bd6;
+  --accent-soft: #0d2845;
+  --accent-border: var(--blue-650);
   --success: var(--green-500);
   --warning: var(--amber-500);
-  --warning-soft: #4c351d;
-  --warning-badge: #563f1d;
-  --warning-text: #ffd78f;
+  --warning-soft: #423608;
+  --warning-badge: #3d2f08;
+  --warning-text: #fde68a;
   --danger: var(--red-500);
-  --danger-border: #8d444b;
-  --danger-surface: #5d2b32;
-  --danger-surface-hover: #73343c;
-  --danger-text: #ffe3e5;
-  --focus: var(--blue-300);
-  --scrim: rgba(4, 7, 12, .76);
-  --canvas-overlay: rgba(7, 11, 18, .82);
-  --floating-surface: rgba(13, 20, 32, .92);
-  --index-surface: rgba(7, 11, 18, .78);
+  --danger-border: #7f1d1d;
+  --danger-surface: #450a0a;
+  --danger-surface-hover: #5a1010;
+  --danger-text: #fecaca;
+  --focus: var(--blue-500);
+  --scrim: rgba(0, 0, 0, .76);
+  --canvas-overlay: rgba(0, 0, 0, .82);
+  --floating-surface: rgba(20, 20, 20, .92);
+  --index-surface: rgba(0, 0, 0, .78);
 
   /* Component */
   --topbar-height: 60px;
@@ -94,4 +94,44 @@
   --focus-ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--focus);
   --shadow-panel: 0 14px 40px rgba(0, 0, 0, .2);
   --shadow-drawer: -20px 0 45px rgba(0, 0, 0, .32);
+}
+
+/* 白天主题：跟随系统浅色模式自动启用 */
+@media (prefers-color-scheme: light) {
+  :root {
+    --canvas: #ffffff;
+    --canvas-subtle: #fafafa;
+    --surface: #fafafa;
+    --surface-raised: #ffffff;
+    --surface-strong: #f5f5f5;
+    --surface-hover: #f5f5f5;
+    --border-subtle: #e5e7eb;
+    --border: #d4d4d4;
+    --border-strong: #a3a3a3;
+    --text: #000000;
+    --text-secondary: #525252;
+    --text-muted: #737373;
+    --text-quiet: #a3a3a3;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-soft: #dbeafe;
+    --accent-border: #3b82f6;
+    --success: #16a34a;
+    --warning: #ca8a04;
+    --warning-soft: #fef3c7;
+    --warning-badge: #fde68a;
+    --warning-text: #78350f;
+    --danger: #dc2626;
+    --danger-border: #fecaca;
+    --danger-surface: #fee2e2;
+    --danger-surface-hover: #fecaca;
+    --danger-text: #7f1d1d;
+    --focus: #3b82f6;
+    --scrim: rgba(0, 0, 0, .5);
+    --canvas-overlay: rgba(255, 255, 255, .9);
+    --floating-surface: rgba(255, 255, 255, .95);
+    --index-surface: rgba(255, 255, 255, .85);
+    --shadow-panel: 0 14px 40px rgba(0, 0, 0, .08);
+    --shadow-drawer: -20px 0 45px rgba(0, 0, 0, .1);
+  }
 }

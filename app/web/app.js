@@ -55,6 +55,9 @@
   function receiveBackendEvent(event) {
     PlateApp.batch.receiveBackendEvent(event);
     PlateApp.review.handleEvent(event);
+    if (PlateApp.projects && typeof PlateApp.projects.handleEvent === "function") {
+      PlateApp.projects.handleEvent(event);
+    }
     if (event.name === "review_finished" || event.name === "adjustment_saved") {
       patchReviewedJob(event.payload.job_id, {
         status: "completed",
@@ -72,11 +75,13 @@
 
   function initializeUi() {
     PlateApp.dialog.init();
+    PlateApp.about.init();
     PlateApp.preview.init();
     PlateApp.filmstrip.init();
     PlateApp.batch.init();
     PlateApp.review.init();
     PlateApp.history.init();
+    PlateApp.projects.init();
     PlateApp.settings.init();
     PlateApp.shortcuts.init();
     PlateApp.batch.renderState();
@@ -134,7 +139,9 @@
       if (serial !== hydrationSerial) return;
       PlateApp.store.patch({
         bootstrap,
-        modelsReady: Boolean(bootstrap.models_ready)
+        modelsReady: Boolean(bootstrap.models_ready),
+        watchFolders: bootstrap.watch_folders || [],
+        watchScanInProgress: Boolean(bootstrap.watch_scan_in_progress)
       }, "bootstrap_ready");
       $("#app-version").textContent = bootstrap.version;
       setStartupState(
@@ -142,6 +149,9 @@
         bootstrap.model_issue
       );
       PlateApp.settings.hydrate(bootstrap);
+      if (PlateApp.projects && typeof PlateApp.projects.hydrate === "function") {
+        PlateApp.projects.hydrate(bootstrap);
+      }
       await Promise.all([
         PlateApp.review.refresh(),
         PlateApp.history.refresh()

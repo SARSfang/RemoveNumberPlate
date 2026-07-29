@@ -150,9 +150,47 @@
     const state = PlateApp.store.get();
     const values = PlateApp.state.counts(state);
     const hasSession = state.running || state.jobs.length > 0;
+    const watching = PlateApp.state.watchActive(state);
     $("#batch-empty").hidden = hasSession;
     $("#batch-workspace").hidden = !hasSession;
-    if (!hasSession) return;
+
+    // Command-bar watch badge: visible whenever watching, batch or not.
+    const indicator = $("#watch-indicator");
+    if (indicator) {
+      indicator.hidden = !watching;
+      const indicatorCount = $("#watch-indicator-count");
+      if (indicatorCount) {
+        indicatorCount.textContent = String(state.watchCaptured || 0);
+      }
+    }
+
+    if (!hasSession) {
+      // Empty state: show the watch panel when watching (and models ready),
+      // otherwise the standard drop zone (which hosts the startup-retry
+      // button when models aren't ready).
+      const panel = $("#watch-panel");
+      const dropZone = $("#drop-zone");
+      const showPanel = watching && state.modelsReady && panel && dropZone;
+      if (panel && dropZone) {
+        panel.hidden = !showPanel;
+        dropZone.hidden = showPanel;
+      }
+      if (showPanel) {
+        const enabledCount = (state.watchFolders || []).filter(
+          (folder) => folder.enabled && !folder.error
+        ).length;
+        const folderCount = state.watchFolderCount || enabledCount;
+        const subText = $("#watch-sub-text");
+        if (subText) subText.textContent = `正在监视 ${folderCount} 个文件夹`;
+        const captured = $("#watch-captured-count");
+        if (captured) captured.textContent = String(state.watchCaptured || 0);
+        const processed = $("#watch-processed-count");
+        if (processed) processed.textContent = String(state.watchProcessed || 0);
+        const scanHint = $("#watch-scan-hint");
+        if (scanHint) scanHint.hidden = !state.watchScanInProgress;
+      }
+      return;
+    }
 
     $("#batch-summary").textContent = `${state.total} 张照片`;
     $("#review-button-count").textContent = `(${values.review_required})`;
@@ -302,6 +340,19 @@
         }
         PlateApp.history && PlateApp.history.refresh();
         break;
+      case "watch_scan_complete":
+        if (payload.cancelled) {
+          announce("启动扫描已取消，已收集的照片仍会处理。");
+        } else if (Number(payload.collected_count || 0) > 0) {
+          announce(`启动扫描完成，已发现 ${payload.collected_count} 张未处理照片。`);
+        }
+        break;
+      case "watch_folder_error":
+        PlateApp.toast.show(
+          `监视文件夹出错：${payload.error || "未知错误"}`
+        );
+        PlateApp.settings && PlateApp.settings.refreshWatchFolders();
+        break;
       default:
         break;
     }
@@ -322,10 +373,42 @@
     }
   }
 
+  async function cancelWatchScan() {
+    try {
+      await PlateApp.bridge.call("cancel_watch_scan");
+      PlateApp.toast.show("正在取消启动扫描…");
+    } catch (error) {
+      PlateApp.toast.show(`无法取消扫描：${error.message || error}`);
+    }
+  }
+
+  async function gotoWatchSettings() {
+    const navigated = await PlateApp.navigate("settings");
+    if (!navigated) return;
+    const heading = document.getElementById("settings-watch");
+    if (heading) {
+      heading.scrollIntoView({ block: "center" });
+      heading.focus({ preventScroll: true });
+    }
+  }
+
   function init() {
     $("#choose-files").addEventListener("click", chooseFiles);
     $("#choose-folder").addEventListener("click", chooseFolder);
     $("#add-files-button").addEventListener("click", chooseFiles);
+    const watchChooseFiles = $("#watch-choose-files");
+    if (watchChooseFiles) watchChooseFiles.addEventListener("click", chooseFiles);
+    const watchChooseFolder = $("#watch-choose-folder");
+    if (watchChooseFolder) watchChooseFolder.addEventListener("click", chooseFolder);
+    const cancelScan = $("#cancel-watch-scan-button");
+    if (cancelScan) cancelScan.addEventListener("click", cancelWatchScan);
+    const gotoSettings = $("#watch-goto-settings");
+    if (gotoSettings) gotoSettings.addEventListener("click", (event) => {
+      event.preventDefault();
+      gotoWatchSettings();
+    });
+    const watchIndicator = $("#watch-indicator");
+    if (watchIndicator) watchIndicator.addEventListener("click", gotoWatchSettings);
     $("#pause-button").addEventListener("click", async () => {
       const state = PlateApp.store.get();
       const button = $("#pause-button");
