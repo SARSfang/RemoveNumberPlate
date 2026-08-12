@@ -7,6 +7,7 @@ name = "remove-number-plate"
 version = "1.0.0"
 description = "Offline batch license-plate removal for automotive photographers"
 requires-python = ">=3.11,<3.13"
+license = { text = "Remove Number Plate Non-Commercial License (see LICENSE file)" }
 dependencies = [
     "numpy>=1.26,<2.0",
     "onnxruntime==1.23.2",
