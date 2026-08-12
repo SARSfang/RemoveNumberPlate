@@ -22,3 +22,5 @@ cache at first launch when the project path contains Chinese characters.
 
 The model files are intentionally excluded from Git. Their official URLs and
 SHA-256 values are pinned in `manifest.json`.
+
+各模型的详细介绍、流水线关系、依赖与许可说明见 [docs/models.md](../docs/models.md)。

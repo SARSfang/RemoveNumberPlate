@@ -82,6 +82,7 @@ python -m app.cli report
 ## 用户文档
 
 - [项目技术与宣传介绍](项目技术介绍.md)
+- [模型说明](docs/models.md)
 - [用户指南](docs/user-guide.md)
 - [故障排除](docs/troubleshooting.md)
 - [隐私说明](docs/privacy.md)
