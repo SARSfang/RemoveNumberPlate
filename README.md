@@ -103,5 +103,6 @@ python -m app.cli report
 - 任何被允许的复制、传播或修改均须保留版权声明与许可协议原文。
 
 注意：本许可不属于 OSI 认证的"开源"许可。本项目引用的第三方开源组件仍受其各自
-原始许可及 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 约束。如需商业授权，
-请联系著作权人另行协商。
+原始许可及 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 约束。如需商业授权
+或其他合作，请通过 [GitHub Issues](https://github.com/SARSfang/RemoveNumberPlate/issues)
+联系著作权人另行协商。
