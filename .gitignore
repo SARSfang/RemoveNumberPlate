@@ -32,10 +32,20 @@ models/*
 *.pth
 *.pdmodel
 *.pdiparams
+
+# Vendored binaries and installers
+packaging/vendor/*.exe
+*.exe
+
 testdata/private/
 testdata/public/
 output/
 logs/
+
+# Local backups and temporary rewrite clones
+.git_backup/
+.repo_clean/
+*.bundle
 
 # Build and packaging
 build/
