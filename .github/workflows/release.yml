@@ -41,7 +41,7 @@ jobs:
         run: |
           python -m venv .model-venv
           .\.model-venv\Scripts\python.exe -m pip install `
-            paddlepaddle==3.0.0 paddle2onnx==2.1.0 polygraphy
+            paddlepaddle==3.0.0 paddle2onnx==2.1.0 polygraphy packaging
           .\.model-venv\Scripts\python.exe -m scripts.build_models
           .\.venv\Scripts\python.exe -m scripts.verify_models
 
