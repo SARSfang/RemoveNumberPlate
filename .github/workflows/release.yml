@@ -80,10 +80,10 @@ jobs:
             )
           )
 
-      - name: Reject unsigned tag release
+      - name: Note unsigned tag release
         if: startsWith(github.ref, 'refs/tags/') && env.HAS_SIGNING_CERTIFICATE != 'true'
         shell: pwsh
-        run: throw "Tagged releases require Windows signing secrets."
+        run: Write-Output "::warning::Building unsigned release for $env:GITHUB_REF_NAME (no signing certificate configured)."
 
       - name: Validate release tag
         if: startsWith(github.ref, 'refs/tags/')
@@ -105,8 +105,8 @@ jobs:
             -PfxPassword "$env:WINDOWS_SIGN_CERTIFICATE_PASSWORD" `
             -RequireSignature
 
-      - name: Build unsigned workflow preview
-        if: env.HAS_SIGNING_CERTIFICATE != 'true' && github.event_name == 'workflow_dispatch'
+      - name: Build unsigned release
+        if: env.HAS_SIGNING_CERTIFICATE != 'true'
         shell: pwsh
         run: .\packaging\build_release.ps1
 

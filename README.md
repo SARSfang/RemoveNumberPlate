@@ -78,8 +78,9 @@ python -m app.cli report
 脚本会校验模型、运行测试、构建免安装目录与正式安装程序，并执行桌面启动验收。
 最终文件位于 `dist\installer`，同目录包含 SHA-256 校验值。
 
-带 `v*` tag 的 GitHub 发布必须配置代码签名证书；缺少签名 secrets 时流水线会拒绝
-发布。手动运行 workflow 可以生成明确标记的未签名内部预览。
+带 `v*` tag 的 GitHub 发布：若配置了代码签名 secrets（`WINDOWS_SIGN_CERTIFICATE_BASE64`），
+流水线会构建签名版本；否则以未签名方式构建并发布，同时在构建日志中给出警告
+（Windows 首次运行可能提示未知发布者）。
 
 ## 用户文档
 
