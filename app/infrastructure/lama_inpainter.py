@@ -30,6 +30,33 @@ def _context_bounds(
     return x1, y1, x1 + side, y1 + side
 
 
+def split_mask_regions(
+    mask: NDArray[np.uint8],
+    min_area: int = 1,
+) -> list[NDArray[np.uint8]]:
+    """Split a binary mask into its connected components (8-connectivity).
+
+    Each returned array holds only one connected component. Components whose
+    area is below ``min_area`` are dropped; the default of 1 guarantees any
+    non-zero region (including tiny brush remnants) is still processed.
+    """
+
+    if not np.any(mask):
+        return []
+    binary = (mask > 0).astype(np.uint8)
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+        binary, connectivity=8
+    )
+    regions: list[NDArray[np.uint8]] = []
+    for label in range(1, num_labels):
+        if stats[label, cv2.CC_STAT_AREA] < min_area:
+            continue
+        region = np.zeros_like(mask)
+        region[labels == label] = 255
+        regions.append(region)
+    return regions
+
+
 def _feathered_composite(
     original: NDArray[np.uint8],
     generated: NDArray[np.uint8],
@@ -86,18 +113,12 @@ class LamaInpainter:
         self._context_scale = context_scale
         self._feather_radius = feather_radius
 
-    def inpaint(
+    def _inpaint_crop(
         self,
         image_rgb: NDArray[np.uint8],
         mask: NDArray[np.uint8],
     ) -> NDArray[np.uint8]:
-        if image_rgb.dtype != np.uint8 or image_rgb.ndim != 3:
-            raise ValueError("image must be an HxWx3 uint8 array")
-        if mask.dtype != np.uint8 or mask.shape != image_rgb.shape[:2]:
-            raise ValueError("mask must be uint8 and match image dimensions")
-        if not np.any(mask):
-            return image_rgb.copy()
-
+        """Run LaMa on a single context crop and feathered-composite it back."""
         x1, y1, x2, y2 = _context_bounds(mask, self._context_scale)
         crop_rgb = np.ascontiguousarray(image_rgb[y1:y2, x1:x2])
         crop_mask = np.ascontiguousarray(mask[y1:y2, x1:x2])
@@ -140,4 +161,25 @@ class LamaInpainter:
         )
         result = image_rgb.copy()
         result[y1:y2, x1:x2] = composed_crop
+        return result
+
+    def inpaint(
+        self,
+        image_rgb: NDArray[np.uint8],
+        mask: NDArray[np.uint8],
+    ) -> NDArray[np.uint8]:
+        if image_rgb.dtype != np.uint8 or image_rgb.ndim != 3:
+            raise ValueError("image must be an HxWx3 uint8 array")
+        if mask.dtype != np.uint8 or mask.shape != image_rgb.shape[:2]:
+            raise ValueError("mask must be uint8 and match image dimensions")
+        if not np.any(mask):
+            return image_rgb.copy()
+
+        regions = split_mask_regions(mask)
+        if len(regions) <= 1:
+            return self._inpaint_crop(image_rgb, mask)
+
+        result = image_rgb.copy()
+        for region in regions:
+            result = self._inpaint_crop(result, region)
         return result

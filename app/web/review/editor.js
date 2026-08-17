@@ -13,6 +13,7 @@
     submittedCommands: [],
     redoCommands: [],
     polygons: [],
+    allRegions: [],
     selectedPolygonId: null,
     previewCommand: null,
     previewToken: null,
@@ -188,6 +189,7 @@
     state.submittedCommands = [];
     state.redoCommands = [];
     state.polygons = [];
+    state.allRegions = [];
     state.selectedPolygonId = null;
     state.previewCommand = null;
     state.previewToken = null;
@@ -225,6 +227,7 @@
       }
     ]));
     state.marginRatio = Number(state.current.default_margin_ratio ?? .35);
+    const keptIds = new Set();
     state.commands.forEach((command) => {
       if (command.type === "set_detection_polygon" && values.has(command.target_id)) {
         values.get(command.target_id).points = clonePoints(command.points);
@@ -237,14 +240,24 @@
           manual: true
         });
       } else if (command.type === "remove_detection") {
-        const target = command.target_id || `detection:${command.index}`;
-        values.delete(target);
+        keptIds.add(command.target_id || `detection:${command.index}`);
       } else if (command.type === "set_margin") {
         state.marginRatio = Number(command.value ?? command.margin_ratio ?? .35);
       }
     });
-    state.polygons = [...values.values()];
-    if (!values.has(state.selectedPolygonId)) {
+    state.allRegions = [...values.entries()].map(([identifier, polygon]) => ({
+      ...polygon,
+      kept: keptIds.has(identifier)
+    }));
+    state.polygons = state.allRegions
+      .filter((region) => !region.kept)
+      .map((region) => ({
+        id: region.id,
+        points: region.points,
+        confidence: region.confidence,
+        manual: region.manual
+      }));
+    if (!state.polygons.some((polygon) => polygon.id === state.selectedPolygonId)) {
       state.selectedPolygonId = state.polygons[0]?.id || null;
     }
     const percent = Math.round(state.marginRatio * 100);
@@ -254,6 +267,67 @@
       `${percent >= 0 ? "+" : ""}${percent}%`
     );
     $("#mask-margin-value").textContent = `${percent >= 0 ? "+" : ""}${percent}%`;
+    renderPlateList();
+  }
+
+  function commandTarget(command) {
+    return command.target_id || `detection:${command.index}`;
+  }
+
+  function eliminatePlate(identifier) {
+    if (state.commands.some((command) =>
+      command.type === "remove_detection" && commandTarget(command) === identifier)) {
+      return;
+    }
+    commitCommand({ type: "remove_detection", target_id: identifier });
+  }
+
+  function restorePlate(identifier) {
+    const remaining = state.commands.filter((command) =>
+      !(command.type === "remove_detection" && commandTarget(command) === identifier));
+    if (remaining.length === state.commands.length) return;
+    invalidatePreview();
+    state.commands = remaining;
+    state.redoCommands = [];
+    state.dirty = true;
+    rebuildPolygons();
+    updateEditorButtons();
+    draw();
+  }
+
+  function renderPlateList() {
+    const list = $("#plate-region-list");
+    if (!list) return;
+    list.replaceChildren();
+    state.allRegions.forEach((region, index) => {
+      const row = document.createElement("div");
+      row.className = "plate-region-item";
+      row.classList.toggle("is-active", region.id === state.selectedPolygonId);
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "plate-region-checkbox";
+      checkbox.checked = !region.kept;
+      checkbox.setAttribute("aria-label", `消除车牌 ${index + 1}`);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) restorePlate(region.id);
+        else eliminatePlate(region.id);
+      });
+      const name = document.createElement("span");
+      name.className = "plate-region-name";
+      name.textContent = `车牌 ${index + 1}`;
+      const status = document.createElement("span");
+      status.className = "plate-region-status";
+      status.textContent = region.kept ? "保留" : "消除";
+      row.append(checkbox, name, status);
+      row.addEventListener("click", (event) => {
+        if (event.target === checkbox || region.kept) return;
+        state.selectedPolygonId = region.id;
+        renderPlateList();
+        draw();
+      });
+      list.appendChild(row);
+    });
+    list.hidden = state.allRegions.length === 0;
   }
 
   async function loadImage(dataUrl) {
@@ -528,6 +602,9 @@
     $("#editor-result-tab").setAttribute("aria-selected", String(state.viewVariant === "result"));
     $$(".tool-button[data-tool], #restore-button, #mask-margin, #brush-size").forEach((control) => {
       control.disabled = busy || state.viewVariant === "result";
+    });
+    $$("#plate-region-list input[type=checkbox]").forEach((checkbox) => {
+      checkbox.disabled = busy || state.viewVariant === "result";
     });
     $("#skip-review-button").disabled = busy;
   }
