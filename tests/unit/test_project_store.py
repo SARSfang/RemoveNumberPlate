@@ -175,7 +175,9 @@ def test_touch_last_used(tmp_path: Path) -> None:
         fetched = store.get_project(created.id)
         assert fetched is not None
         assert fetched.last_used_at != ""
-        assert fetched.last_used_at > created.created_at
+        # CI runners can execute create_project and touch_last_used within
+        # the same microsecond, so only require last_used_at >= created_at.
+        assert fetched.last_used_at >= created.created_at
 
 
 def test_project_preset_validation() -> None:
