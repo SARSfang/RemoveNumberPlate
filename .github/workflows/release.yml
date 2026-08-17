@@ -133,9 +133,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # GitHub strips non-ASCII characters from release asset names, so
+          # publish the installer under an ASCII-safe name and keep
+          # SHA256SUMS.txt consistent with it.
+          $installer = Get-ChildItem "dist/installer" -Filter "*-Setup-*.exe" |
+            Select-Object -First 1
+          $asciiName = "RemoveNumberPlate-Setup-$env:GITHUB_REF_NAME-win64.exe"
+          Copy-Item $installer.FullName "dist/installer/$asciiName" -Force
+          $sums = (Get-Content "dist/installer/SHA256SUMS.txt" -Raw) `
+            -replace [regex]::Escape($installer.Name), $asciiName
+          Set-Content "dist/installer/SHA256SUMS.txt" $sums -NoNewline
           gh release create "$env:GITHUB_REF_NAME" `
             --verify-tag `
             --title "消除车牌 $env:GITHUB_REF_NAME" `
             --notes-file RELEASE.md `
-            dist/installer/*.exe `
+            "dist/installer/$asciiName" `
             dist/installer/SHA256SUMS.txt
