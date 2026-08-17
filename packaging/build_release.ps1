@@ -46,6 +46,25 @@ if (-not $Python) {
 if (-not (Test-Path -LiteralPath $InnoCompiler)) {
     throw "Inno Setup compiler is missing: $InnoCompiler"
 }
+
+# installer.iss bundles the WebView2 Evergreen bootstrapper; it is a local,
+# git-ignored binary, so fetch the official one when missing (local first
+# build or CI). Redistribution is permitted by Microsoft; the Authenticode
+# signature must be valid before the file is used.
+$WebView2Path = Join-Path $PSScriptRoot "vendor\MicrosoftEdgeWebview2Setup.exe"
+if (-not (Test-Path -LiteralPath $WebView2Path)) {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $WebView2Path) |
+        Out-Null
+    Invoke-WebRequest `
+        -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" `
+        -OutFile $WebView2Path
+    $WebView2Signature = Get-AuthenticodeSignature -LiteralPath $WebView2Path
+    if ($WebView2Signature.Status -ne "Valid") {
+        Remove-Item -LiteralPath $WebView2Path -Force
+        throw "Downloaded WebView2 bootstrapper signature is not valid."
+    }
+    Write-Host "Downloaded signed WebView2 bootstrapper to $WebView2Path"
+}
 if ($RequireSignature -and -not $PfxPath) {
     throw "A signing certificate is required for this build."
 }
