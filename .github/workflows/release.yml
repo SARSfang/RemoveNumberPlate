@@ -40,8 +40,12 @@ jobs:
         shell: pwsh
         run: |
           python -m venv .model-venv
+          # paddle2onnx 2.1.0 rejects the PyPI paddlepaddle 3.0.0 wheel on
+          # Windows; the official nightly dev20250426 is the proven combo
+          # (paddle.__version__ reports 3.0.0, matching manifest.json).
           .\.model-venv\Scripts\python.exe -m pip install `
-            paddlepaddle==3.0.0 paddle2onnx==2.1.0 polygraphy packaging
+            paddlepaddle==3.0.0.dev20250426 paddle2onnx==2.1.0 polygraphy packaging `
+            --extra-index-url https://www.paddlepaddle.org.cn/packages/nightly/cpu/
           .\.model-venv\Scripts\python.exe -m scripts.build_models
           .\.venv\Scripts\python.exe -m scripts.verify_models
 
