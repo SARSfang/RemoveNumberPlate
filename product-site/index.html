@@ -13,8 +13,8 @@
   <meta property="og:image" content="https://fangdian.xyz/remove-number-plate/assets/high.webp">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="./assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="./styles.css?v=20261015p6">
-  <script src="./site.js?v=20261015p6" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=20261014p7">
+  <script src="./site.js?v=20261014p7" defer></script>
   <title>消除车牌 — 面向汽车摄影的离线修复工具</title>
 </head>
 <body>
@@ -100,7 +100,7 @@
       <details><summary>高清修复为什么更慢？<span aria-hidden="true">＋</span></summary><p>更大的局部区域需要更多计算与内存。高清修复默认使用自动模式，可调整处理上限。当前版本在 CPU 环境验证，实际速度取决于照片尺寸与电脑配置。</p></details>
       <details><summary>纹理增强会一直生效吗？<span aria-hidden="true">＋</span></summary><p>不会。开关默认开启，但仅在邻近细节适合时补充纹理；强结构边缘、颜色不匹配或来源不足会自动跳过。开关与强度均可调整。</p></details>
       <details><summary>下载后怎样确认安装包没有被篡改？<span aria-hidden="true">＋</span></summary><p>建议核对 SHA-256 哈希。在安装包所在文件夹打开 PowerShell，运行：</p><div class="faq-command"><code>Get-FileHash .\RemoveNumberPlate-Setup-v1.2.0-win64.exe -Algorithm SHA256</code></div><p>把输出的哈希与本页下载卡片中的哈希、或 GitHub Release 页随附的 <code>SHA256SUMS.txt</code> 逐位比对，一致再安装。若不一致，不要运行安装包。</p></details>
-      <details><summary>安装时出现「Windows 已保护你的电脑」怎么办？<span aria-hidden="true">＋</span></summary><p>安装包目前未购买代码签名证书，SmartScreen 可能提示未知发布者，这不等于文件有问题。确认安装包来自<a href="https://github.com/SARSfang/RemoveNumberPlate/releases/tag/v1.2.0" target="_blank" rel="noopener noreferrer">官方 GitHub Release</a> 且哈希核对一致后，可在提示窗口选择「更多信息」→「仍要运行」。请不要从第三方镜像或网盘转载链接下载。</p></details>
+      <details><summary>安装时出现「Windows 已保护你的电脑」怎么办？<span aria-hidden="true">＋</span></summary><p>安装包目前未做代码签名，SmartScreen 可能提示未知发布者。哈希校验用于确认文件与官方发布一致，不是安全性保证。确认安装包来自<a href="https://github.com/SARSfang/RemoveNumberPlate/releases/tag/v1.2.0" target="_blank" rel="noopener noreferrer">官方 GitHub Release</a> 且哈希核对一致后，可在提示窗口选择「更多信息」→「仍要运行」。请不要从第三方镜像或网盘转载链接下载。</p></details>
       <details><summary>商业照片处理可以直接使用吗？<span aria-hidden="true">＋</span></summary><p>当前许可仅授予个人及非商业用途。用于商业摄影或服务前，请联系作者确认授权。<a href="./LICENSE.txt">阅读完整许可</a>。</p></details>
       <details><summary>遇到问题，怎样反馈？<span aria-hidden="true">＋</span></summary><p>可以在 <a href="https://github.com/SARSfang/RemoveNumberPlate/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 描述版本、问题和复现步骤。分享照片前，请检查隐私并确认有权公开。</p></details>
     </div></section>
@@ -108,7 +108,7 @@
   <footer class="container footer"><div class="footer-main"><a class="brand" href="#main"><img src="./assets/logo.png" width="32" height="32" alt=""><span>消除车牌</span></a><p>为照片留出更多空间。</p><a class="text-link" href="https://me.fangdian.xyz/">返回 Fang Dian <span aria-hidden="true">↗</span></a></div><div class="footer-meta"><span>© 2026 Fang Dian</span><div><a href="./LICENSE.txt">非商用许可</a><a href="./THIRD_PARTY_NOTICES.txt">第三方许可说明</a><a href="https://github.com/SARSfang/RemoveNumberPlate/issues" target="_blank" rel="noopener noreferrer">反馈</a></div></div></footer>
   <div class="get-bar" data-get-bar role="region" aria-label="获取软件" hidden>
     <p class="get-bar-meta">v1.2.0 正式版<br>Windows 10 / 11 · 64 位</p>
-    <a class="button primary" href="https://github.com/SARSfang/RemoveNumberPlate/releases/tag/v1.2.0" target="_blank" rel="noopener noreferrer">获取软件 <span aria-hidden="true">↗</span></a>
+    <a class="button primary" href="https://github.com/SARSfang/RemoveNumberPlate" target="_blank" rel="noopener noreferrer">获取软件 <span aria-hidden="true">↗</span></a>
   </div>
 </body>
 </html>
