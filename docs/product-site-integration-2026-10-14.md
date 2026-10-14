@@ -1,13 +1,14 @@
 # 产品页接入与发布准备
 
-日期：2026-10-14。当前为本地预览，不代表公网部署。
+日期：2026-10-14（2026-10-15 补第二批：v1.2.0 下载区、自定义 404 与交互打磨）。页面已上线。
 
 ## 文件位置
 
 - 产品源：E:\消除车牌\product-site。
 - MyWeb 副本：E:\MyWeb\products\remove-number-plate。
-- 预定远端：/var/www/fangdian-products/remove-number-plate。
-- URL：https://fangdian.xyz/remove-number-plate/。
+- 远端：/var/www/fangdian-products/remove-number-plate。
+- URL：https://www.fangdian.xyz/remove-number-plate/。
+- 2026-10-14 核验：裸域 https://fangdian.xyz/remove-number-plate/ 与 www 均直接返回 200，二者之间没有 301 跳转；不存在的路径返回 404。
 
 ## 路由
 
@@ -21,9 +22,12 @@ location = /remove-number-plate {
 location ^~ /remove-number-plate/ {
     root /var/www/fangdian-products;
     index index.html;
+    error_page 404 /remove-number-plate/404.html;
     try_files $uri $uri/ =404;
 }
 ```
+
+`error_page 404` 一行为 2026-10-15 第二批追加：内部重定向仍命中本 location，从同一 root 读取 `remove-number-plate/404.html`，响应状态码保持 404。上线前在服务器实测不存在路径确实返回自定义页且状态码为 404；变更走既有流程（备份 → nginx -t → 通过才 reload，失败回滚）。
 
 产品 HTML/CSS/JavaScript/图片/许可文件分别位于此路径内。
 片段不增加自定义 add_header，继承既有安全头；不存在的产品资源返回 404，不回退到拍车首页。
@@ -60,4 +64,6 @@ paiche/web/vite.config.js 的 navigateFallbackDenylist 需要追加：
 - 网页交付前由用户审核，公网发布按 MyWeb AGENTS.md 另行确认。
 - HTTPS 路径、旧 SW、CSP、仓库链接、canonical、分享图片与站点入口在发布后复验。
 
-目前公开版本元信息以本地 RELEASE.md 为依据。GitHub 官方 API 本轮返回配额限制，不能声称已重新验证线上资产大小或最新发布状态。
+v1.2.0 已通过 `gh release view v1.2.0` 核实：2026-10-14 发布，非草稿、非预发布；安装包 `RemoveNumberPlate-Setup-v1.2.0-win64.exe` 为 481,309,207 字节（约 459 MiB），SHA-256 为 `2642d1554a167c5004ac1c1908784c896f1b2f97d27a4532f7613e3d4c6602d1`，Release 另附 `SHA256SUMS.txt`。产品页哈希以 Release 页随附文件为准，页面文案已注明。安装包未做代码签名，FAQ 已说明 SmartScreen「更多信息 → 仍要运行」与仅从官方 Release 获取的注意事项。
+
+第二批发布只更新产品目录下 index.html、styles.css、site.js 与新增 404.html（assets 未变），外加上面的一行 error_page 配置；HTML/CSS/JS 缓存参数为 `?v=20261015p6`，发布后用 curl 核验线上拿到新文件而不是缓存旧版。
