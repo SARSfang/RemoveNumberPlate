@@ -12,7 +12,10 @@ from typing import cast
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = PROJECT_ROOT / "packaging" / "third_party_licenses"
-RUNTIME_DISTRIBUTIONS = (
+# Declared as a variable rather than a Final constant so that the optional
+# high-resolution runtime (scripts/collect_hd_licenses.py) can substitute its
+# own distribution set before invoking main().
+RUNTIME_DISTRIBUTIONS: tuple[str, ...] = (
     "numpy",
     "onnxruntime",
     "opencv-python-headless",

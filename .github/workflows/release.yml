@@ -16,7 +16,10 @@ concurrency:
 jobs:
   windows-release:
     runs-on: windows-latest
-    timeout-minutes: 60
+    # The v1.2.0 payload includes the optional HD runtime, so model
+    # conversion, two PyInstaller builds and installer compression take
+    # materially longer than the standard-only release.
+    timeout-minutes: 120
     env:
       HAS_SIGNING_CERTIFICATE: ${{ secrets.WINDOWS_SIGN_CERTIFICATE_BASE64 != '' }}
       WINDOWS_SIGN_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGN_CERTIFICATE_PASSWORD }}
@@ -48,6 +51,48 @@ jobs:
             --extra-index-url https://www.paddlepaddle.org.cn/packages/nightly/cpu/
           .\.model-venv\Scripts\python.exe -m scripts.build_models
           .\.venv\Scripts\python.exe -m scripts.verify_models
+
+      - name: Fetch the optional Big-LaMa weight
+        shell: pwsh
+        run: |
+          # big_lama_hd_optional is disabled in the manifest, so build_models
+          # intentionally skips it. The release bundles the optional HD
+          # runtime, so the weight has to be fetched and verified explicitly.
+          $Destination = "models\big-lama.pt"
+          $Expected = "344c77bbcb158f17dd143070d1e789f38a66c04202311ae3a258ef66667a9ea9"
+          if (Test-Path -LiteralPath $Destination) {
+            $Actual = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($Actual -eq $Expected) {
+              Write-Output "Big-LaMa weight already present and verified."
+              exit 0
+            }
+            Remove-Item -LiteralPath $Destination -Force
+          }
+          Invoke-WebRequest `
+            -Uri "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt" `
+            -OutFile $Destination
+          $Actual = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($Actual -ne $Expected) {
+            Remove-Item -LiteralPath $Destination -Force
+            throw "Big-LaMa checksum mismatch: $Actual"
+          }
+
+      - name: Install high-resolution runtime build dependencies
+        shell: pwsh
+        run: |
+          # The HD worker is frozen from an independent environment so that the
+          # standard runtime never has to ship PyTorch.
+          python -m venv .venv-hd
+          .\.venv-hd\Scripts\python.exe -m pip install --upgrade pip
+          # CPU-only wheels: the release bundle must not depend on a GPU or on
+          # the CUDA runtime being present on the target machine.
+          .\.venv-hd\Scripts\python.exe -m pip install `
+            -r requirements-hd.txt "pyinstaller>=6.16,<7" `
+            --extra-index-url https://download.pytorch.org/whl/cpu
+
+      - name: Build the high-resolution runtime component
+        shell: pwsh
+        run: .\packaging\build_hd_component.ps1
 
       - name: Install Inno Setup
         shell: pwsh

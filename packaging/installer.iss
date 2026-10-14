@@ -1,6 +1,6 @@
 #define MyAppName "消除车牌"
-#define MyAppVersion "1.0.1"
-#define MyNumericVersion "1.0.1.0"
+#define MyAppVersion "1.2.0"
+#define MyNumericVersion "1.2.0.0"
 #define MyAppPublisher "SARSfang"
 #define MyAppExeName "消除车牌.exe"
 
@@ -21,8 +21,13 @@ OutputDir=..\dist\installer
 OutputBaseFilename=消除车牌-Setup-v{#MyAppVersion}-win64
 SetupIconFile=app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
-Compression=lzma2/ultra64
-SolidCompression=yes
+; v1.2.0 bundles the optional HD runtime (~0.5 GB of PyTorch worker files
+; plus the 196 MB Big-LaMa weight). lzma2/ultra64 is fast enough for the
+; standard payload but pushes a full release build past the CI job timeout,
+; so the bundle uses lzma2/max with solid compression disabled: the large
+; member files are already dense and gain little from solid compression.
+Compression=lzma2/max
+SolidCompression=no
 WizardStyle=modern
 VersionInfoVersion={#MyNumericVersion}
 VersionInfoCompany={#MyAppPublisher}

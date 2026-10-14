@@ -2,7 +2,8 @@ param(
     [switch]$SkipTests,
     [string]$PfxPath,
     [string]$PfxPassword,
-    [switch]$RequireSignature
+    [switch]$RequireSignature,
+    [switch]$SkipHdRuntime
 )
 
 $ErrorActionPreference = "Stop"
@@ -107,9 +108,35 @@ try {
     & $Python -m PyInstaller --noconfirm --clean packaging\plate_clear.spec
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller build failed." }
 
+    # installer.iss bundles dist\消除车牌\* recursively, so merging the HD
+    # runtime into that directory is what puts it inside the installer. The
+    # release notes promise the shipped installer contains the HD component.
+    if (-not $SkipHdRuntime) {
+        if (-not (Test-Path -LiteralPath "dist\hd-component\hd-runtime")) {
+            throw "HD runtime component is missing; run packaging\build_hd_component.ps1 first."
+        }
+        $ReleaseDir = Join-Path $ProjectRoot "dist\消除车牌"
+        Copy-Item -LiteralPath "dist\hd-component\hd-runtime" `
+            -Destination $ReleaseDir -Recurse -Force
+        $ReleaseModels = Join-Path $ReleaseDir "_internal\models"
+        New-Item -ItemType Directory -Path $ReleaseModels -Force | Out-Null
+        Copy-Item -LiteralPath "dist\hd-component\_internal\models\big-lama.pt" `
+            -Destination $ReleaseModels -Force
+        Copy-Item -LiteralPath "dist\hd-component\third_party_licenses_hd" `
+            -Destination $ReleaseDir -Recurse -Force
+        Copy-Item -LiteralPath "docs\hd-repair.md" `
+            -Destination (Join-Path $ReleaseDir "高清组件说明.md") -Force
+    }
+
+    # Only the PyInstaller output directory counts as the release payload.
+    # installer/preview hold auxiliary builds, and hd-component holds the
+    # optional HD runtime that has already been merged into the release
+    # directory above.
     $ReleaseDirectories = @(
         Get-ChildItem -LiteralPath "dist" -Directory |
-            Where-Object { $_.Name -notin @("installer", "preview") }
+            Where-Object {
+                $_.Name -notin @("installer", "preview", "hd-component", "hd-preview-final")
+            }
     )
     $ApplicationExecutables = @(
         $ReleaseDirectories |
