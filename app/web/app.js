@@ -53,6 +53,9 @@
   }
 
   function receiveBackendEvent(event) {
+    if (event.payload && event.payload.warnings && event.payload.warnings.length) {
+      PlateApp.toast.show(event.payload.warnings.join("；"));
+    }
     PlateApp.batch.receiveBackendEvent(event);
     PlateApp.review.handleEvent(event);
     if (PlateApp.projects && typeof PlateApp.projects.handleEvent === "function") {
@@ -125,8 +128,8 @@
       $("#drop-lead").textContent = detail || "请重新检测；如果仍失败，可在设置中打开诊断文件夹。";
     } else {
       $("#drop-eyebrow").textContent = "本地批量处理";
-      $("#drop-title").textContent = "把整组照片拖到这里";
-      $("#drop-lead").textContent = "自动检测并消除车牌，原片永不覆盖。";
+      $("#drop-title").textContent = "拖入照片或文件夹";
+      $("#drop-lead").textContent = "自动检测与修复车牌区域，处理结果另存为新文件。";
     }
   }
 

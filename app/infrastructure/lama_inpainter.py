@@ -22,12 +22,14 @@ def _context_bounds(
         return (0, 0, mask.shape[1], mask.shape[0])
     x, y, width, height = cv2.boundingRect(points)
     side = max(int(round(max(width, height) * context_scale)), 64)
-    side = min(side, mask.shape[0], mask.shape[1])
+    # A square clipped to the short image axis can silently omit a wide mask.
+    crop_width = min(side, mask.shape[1])
+    crop_height = min(side, mask.shape[0])
     center_x = x + width // 2
     center_y = y + height // 2
-    x1 = min(max(center_x - side // 2, 0), mask.shape[1] - side)
-    y1 = min(max(center_y - side // 2, 0), mask.shape[0] - side)
-    return x1, y1, x1 + side, y1 + side
+    x1 = min(max(center_x - crop_width // 2, 0), mask.shape[1] - crop_width)
+    y1 = min(max(center_y - crop_height // 2, 0), mask.shape[0] - crop_height)
+    return x1, y1, x1 + crop_width, y1 + crop_height
 
 
 def split_mask_regions(
@@ -78,6 +80,7 @@ def _feathered_composite(
             iterations=1,
         )
         alpha[core > 0] = 1.0
+        alpha[binary == 0] = 0.0
     alpha = alpha[:, :, None]
     blended = generated.astype(np.float32) * alpha + original.astype(np.float32) * (
         1.0 - alpha
@@ -102,6 +105,7 @@ class LamaInpainter:
         runtime = import_module("onnxruntime")
         options = runtime.SessionOptions()
         options.log_severity_level = 3
+        options.intra_op_num_threads = 4
         try:
             self._session: Any = runtime.InferenceSession(
                 str(model_path),
@@ -122,16 +126,29 @@ class LamaInpainter:
         x1, y1, x2, y2 = _context_bounds(mask, self._context_scale)
         crop_rgb = np.ascontiguousarray(image_rgb[y1:y2, x1:x2])
         crop_mask = np.ascontiguousarray(mask[y1:y2, x1:x2])
-        resized_bgr = cv2.resize(
-            crop_rgb[:, :, ::-1],
-            (512, 512),
-            interpolation=cv2.INTER_AREA,
+        generated_rgb = self.generate_crop(crop_rgb, crop_mask)
+        composed_crop = _feathered_composite(
+            crop_rgb, generated_rgb, crop_mask, self._feather_radius,
         )
-        resized_mask = cv2.resize(
-            (crop_mask > 0).astype(np.float32),
-            (512, 512),
-            interpolation=cv2.INTER_NEAREST,
-        )
+        result = image_rgb.copy()
+        result[y1:y2, x1:x2] = composed_crop
+        return result
+
+    def generate_crop(
+        self, crop_rgb: NDArray[np.uint8], crop_mask: NDArray[np.uint8],
+    ) -> NDArray[np.uint8]:
+        """Preserve aspect ratio; pad small crops instead of upscaling them."""
+        height, width = crop_mask.shape
+        scale = min(1.0, 512 / max(height, width))
+        rw, rh = max(1, round(width * scale)), max(1, round(height * scale))
+        resized_bgr = cv2.resize(crop_rgb[:, :, ::-1], (rw, rh),
+                                 interpolation=cv2.INTER_AREA)
+        resized_mask = cv2.resize((crop_mask > 0).astype(np.float32), (rw, rh),
+                                  interpolation=cv2.INTER_NEAREST)
+        resized_bgr = cv2.copyMakeBorder(resized_bgr, 0, 512-rh, 0, 512-rw,
+                                         cv2.BORDER_REFLECT_101)
+        resized_mask = cv2.copyMakeBorder(resized_mask, 0, 512-rh, 0, 512-rw,
+                                          cv2.BORDER_CONSTANT, value=(0.0,))
         image_tensor = np.ascontiguousarray(
             resized_bgr.transpose(2, 0, 1)[None].astype(np.float32) / 255.0
         )
@@ -143,7 +160,7 @@ class LamaInpainter:
             )[0]
         except Exception as error:
             raise InpainterError(f"LaMa inference failed: {error}") from error
-        generated_bgr = np.asarray(output[0]).transpose(1, 2, 0)
+        generated_bgr = np.asarray(output[0]).transpose(1, 2, 0)[:rh, :rw]
         generated_rgb = np.clip(generated_bgr[:, :, ::-1], 0, 255).astype(np.uint8)
         generated_rgb = np.asarray(
             cv2.resize(
@@ -153,22 +170,14 @@ class LamaInpainter:
             ),
             dtype=np.uint8,
         )
-        composed_crop = _feathered_composite(
-            crop_rgb,
-            generated_rgb,
-            crop_mask,
-            self._feather_radius,
-        )
-        result = image_rgb.copy()
-        result[y1:y2, x1:x2] = composed_crop
-        return result
+        return generated_rgb
 
     def inpaint(
         self,
         image_rgb: NDArray[np.uint8],
         mask: NDArray[np.uint8],
     ) -> NDArray[np.uint8]:
-        if image_rgb.dtype != np.uint8 or image_rgb.ndim != 3:
+        if image_rgb.dtype != np.uint8 or image_rgb.ndim != 3 or image_rgb.shape[2] != 3:
             raise ValueError("image must be an HxWx3 uint8 array")
         if mask.dtype != np.uint8 or mask.shape != image_rgb.shape[:2]:
             raise ValueError("mask must be uint8 and match image dimensions")

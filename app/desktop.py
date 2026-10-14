@@ -50,6 +50,7 @@ from app.core.project_store import (
     ProjectPreset,
     ProjectStore,
 )
+from app.core.repair_config import RepairConfig
 from app.core.watch_folder import WatchFolderError, WatchFolderService
 from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
@@ -58,7 +59,6 @@ from app.infrastructure.webview2 import detect_webview2_version
 from app.release_readiness import inspect_models, inspect_storage
 from app.settings import (
     SettingsStore,
-    UserSettings,
     _parse_post_process_config,
     _post_process_config_to_dict,
 )
@@ -531,6 +531,7 @@ class BatchService:
                             "detection_count": result.detection_count,
                             "risks": [risk.value for risk in result.risks],
                             "error": result.error,
+                            "warnings": list(result.warnings),
                         },
                     )
         except Exception as error:
@@ -575,6 +576,7 @@ class DesktopApi:
         default_factory = processor_factory or self._processor_factory_for(
             self._settings.preset,
             self._settings.mask_margin_ratio,
+            self._settings.repair_config,
         )
         self._service = BatchService(
             self._send_event,
@@ -582,7 +584,9 @@ class DesktopApi:
             job_database=self._job_database,
             settings_store=self._settings_store,
         )
-        self._manual_processor_factory = manual_processor_factory or build_manual_processor
+        self._manual_processor_factory = manual_processor_factory or (
+            lambda: build_manual_processor(self._settings.repair_config)
+        )
         self._manual_processor: ManualMaskProcessor | None = None
         self._review_lock = threading.Lock()
         self._review_busy = False
@@ -607,8 +611,11 @@ class DesktopApi:
     def _processor_factory_for(
         preset: str,
         mask_margin_ratio: float,
+        repair_config: RepairConfig | None = None,
     ) -> ProcessorFactory:
         confidence = PRESETS[preset].auto_confidence
+        if repair_config is not None:
+            return lambda: build_processor(confidence, mask_margin_ratio, repair_config)
         return lambda: build_processor(confidence, mask_margin_ratio)
 
     def _bind_window(self, window: webview.Window) -> None:
@@ -654,11 +661,12 @@ class DesktopApi:
             "recovered_jobs": recovered,
             "database_recovered": self._database_recovered,
             "settings_recovered": self._settings_recovered,
-            "runtime": "轻量 ONNX Runtime · 本地离线处理",
+            "runtime": "ONNX Runtime / Big-LaMa · 本地处理",
             "schema_version": SCHEMA_VERSION,
             "webview2_version": detect_webview2_version() or "未检测到",
             "preset": self._settings.preset,
             "mask_margin_percent": round(self._settings.mask_margin_ratio * 100),
+            "repair_config": self._settings.repair_config.as_dict(),
             "watch_folders": self._watch_service.list_folder_states(),
             "watch_scan_in_progress": self._scan_thread is not None
             and self._scan_thread.is_alive(),
@@ -714,16 +722,17 @@ class DesktopApi:
         if preset not in PRESETS:
             return {"accepted": False, "message": "未知的处理预设。"}
         if not self._service.replace_processor_factory(
-            self._processor_factory_for(preset, self._settings.mask_margin_ratio)
+            self._processor_factory_for(
+                preset, self._settings.mask_margin_ratio, self._settings.repair_config
+            )
         ):
             return {
                 "accepted": False,
                 "message": "当前批次运行中，请在处理结束后更改预设。",
             }
-        self._settings = UserSettings(
-            preset=preset,
-            mask_margin_ratio=self._settings.mask_margin_ratio,
-        )
+        # Use ``replace`` so watch folders, post-processing config and the
+        # current project selection survive a preset change.
+        self._settings = replace(self._settings, preset=preset)
         self._settings_store.save(self._settings)
         return {"accepted": True, "message": "处理预设已保存。"}
 
@@ -739,16 +748,17 @@ class DesktopApi:
                 "message": "边缘扩展必须在 -30% 到 +100% 之间。",
             }
         if not self._service.replace_processor_factory(
-            self._processor_factory_for(self._settings.preset, ratio)
+            self._processor_factory_for(
+                self._settings.preset, ratio, self._settings.repair_config
+            )
         ):
             return {
                 "accepted": False,
                 "message": "当前批次运行中，请在处理结束后修改边缘扩展。",
             }
-        self._settings = UserSettings(
-            preset=self._settings.preset,
-            mask_margin_ratio=ratio,
-        )
+        # Use ``replace`` so watch folders, post-processing config and the
+        # current project selection survive a margin change.
+        self._settings = replace(self._settings, mask_margin_ratio=ratio)
         self._settings_store.save(self._settings)
         return {"accepted": True, "message": "默认边缘扩展已保存。"}
 
@@ -757,6 +767,35 @@ class DesktopApi:
 
         settings = self._settings_store.load()
         return _post_process_config_to_dict(settings.post_process_config)
+
+    def set_repair_config(self, config: dict[str, object]) -> dict[str, object]:
+        try:
+            parsed = RepairConfig.parse(config)
+        except (TypeError, ValueError) as error:
+            return {"accepted": False, "message": str(error)}
+        with self._review_lock:
+            if self._review_busy:
+                return {"accepted": False, "message": "请在当前修复结束后更改设置。"}
+            factory = self._processor_factory_for(
+                self._settings.preset, self._settings.mask_margin_ratio, parsed
+            )
+            if not self._service.replace_processor_factory(factory):
+                return {"accepted": False, "message": "请在当前批次结束后更改设置。"}
+            updated = replace(self._settings, repair_config=parsed)
+            try:
+                self._settings_store.save(updated)
+            except OSError as error:
+                self._service.replace_processor_factory(self._processor_factory_for(
+                    self._settings.preset, self._settings.mask_margin_ratio,
+                    self._settings.repair_config,
+                ))
+                return {"accepted": False, "message": f"修复设置保存失败：{error}"}
+            self._settings = updated
+            self._manual_processor = None
+            self._adjustments.invalidate()
+        self._send_event("repair_settings_changed", {})
+        return {"accepted": True, "message": "修复设置已保存，旧预览已清除。",
+                "repair_config": parsed.as_dict()}
 
     def set_post_process_config(self, config: dict[str, object]) -> dict[str, object]:
         """Persist the post-processing configuration.
@@ -1138,6 +1177,7 @@ class DesktopApi:
                 {
                     "job_id": identifier,
                     "preview_token": session.preview_token,
+                    "warnings": list(result.warnings),
                     "image": preview.image,
                     "width": preview.width,
                     "height": preview.height,
@@ -1320,6 +1360,7 @@ class DesktopApi:
                     "job_id": identifier,
                     "status": result.status.value,
                     "output": str(result.output) if result.output else None,
+                    "warnings": list(result.warnings),
                     "elapsed": round(result.elapsed_seconds, 3),
                 },
             )
@@ -1475,11 +1516,9 @@ class DesktopApi:
     def _persist_watch_folders(self) -> None:
         """Sync the watch service's folder list back to settings.json."""
         folders = self._watch_service.list_folders()
-        self._settings = UserSettings(
-            preset=self._settings.preset,
-            mask_margin_ratio=self._settings.mask_margin_ratio,
-            watch_folders=tuple(folders),
-        )
+        # Use ``replace`` so post-processing config and the current project
+        # selection survive watch-folder changes.
+        self._settings = replace(self._settings, watch_folders=tuple(folders))
         self._settings_store.save(self._settings)
 
     # ------------------------------------------------------------------ #

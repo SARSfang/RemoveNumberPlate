@@ -18,7 +18,7 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand" aria-label="消除车牌">
-        <img class="brand-icon" src="assets/icons/scan-line.svg" alt="">
+        <img class="brand-icon brand-logo" src="assets/app-logo.png" alt="" width="36" height="36">
         <strong>消除车牌</strong>
         <span class="local-chip">AI 本地版</span>
       </div>
@@ -49,8 +49,8 @@
               <img src="assets/icons/images.svg" alt="">
             </div>
             <p id="drop-eyebrow" class="eyebrow">本地批量处理</p>
-            <h2 id="drop-title">把整组照片拖到这里</h2>
-            <p id="drop-lead" class="empty-lead">自动检测并消除车牌，原片永不覆盖。</p>
+            <h2 id="drop-title">拖入照片或文件夹</h2>
+            <p id="drop-lead" class="empty-lead">自动检测与修复车牌区域，处理结果另存为新文件。</p>
             <div class="drop-actions">
               <button id="choose-files" class="button button-primary" type="button">
                 <img src="assets/icons/image-plus.svg" alt="">选择照片
@@ -247,7 +247,7 @@
           </section>
           <footer class="batch-footer">
             <span><img src="assets/icons/folder.svg" alt="">结果保存到每组照片旁的“车牌已消除”文件夹</span>
-            <span id="batch-footer-status">原片永不覆盖</span>
+            <span id="batch-footer-status">处理结果另存，保留原始文件</span>
           </footer>
         </section>
       </section>
@@ -264,7 +264,7 @@
         <div id="review-empty" class="empty-state">
           <div class="empty-icon"><img src="assets/icons/shield-check.svg" alt=""></div>
           <h2>当前没有需要复核的照片</h2>
-          <p>发现风险时，照片会安全地留在这里。</p>
+          <p>检测到需要复核的区域时，相应照片将列入待复核列表。</p>
           <button class="button button-secondary" data-go-page="batch" type="button">返回批处理</button>
         </div>
         <div id="review-workspace" class="review-workspace" hidden>
@@ -421,6 +421,34 @@
             </div>
             <div class="settings-processing-body">
               <div class="setting-row">
+                <div><span id="repair-quality-label" class="setting-label">修复质量</span><p id="repair-quality-hint">自动匹配修复区域大小，兼顾细节与速度。</p></div>
+                <div class="quality-selector" role="radiogroup" aria-labelledby="repair-quality-label">
+                  <button type="button" class="quality-option" role="radio" aria-checked="true" data-repair-quality="auto">自动</button>
+                  <button type="button" class="quality-option" role="radio" aria-checked="false" data-repair-quality="standard" tabindex="-1">标准</button>
+                  <button type="button" class="quality-option" role="radio" aria-checked="false" data-repair-quality="high" tabindex="-1">高分辨率</button>
+                </div>
+                <select id="repair-quality" hidden aria-hidden="true" tabindex="-1">
+                  <option value="auto">自动（推荐）</option>
+                  <option value="standard">标准</option>
+                  <option value="high">高分辨率</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <div><label for="texture-enabled">纹理增强</label><p>匹配邻近表面细节；不适合的区域自动跳过。</p></div>
+                <input id="texture-enabled" class="ui-switch" role="switch" type="checkbox" checked>
+              </div>
+              <div class="setting-row">
+                <div><label for="texture-strength">纹理强度</label><p>较低强度更适合光滑车漆。</p></div>
+                <div class="strength-control"><input id="texture-strength" type="range" min="0" max="100" value="25">
+                  <output id="texture-strength-value" for="texture-strength">25%</output></div>
+              </div>
+              <div class="setting-row">
+                <div><label for="hd-max-side">高清处理上限</label><p>仅限制局部修复尺寸；更高上限需要更多内存和处理时间。</p></div>
+                <select id="hd-max-side"><option value="1024">1024</option>
+                  <option value="1536" selected>1536</option><option value="2048">2048</option></select>
+              </div>
+              <p class="repair-save-state" id="repair-save-state" role="status" aria-live="polite">修复设置自动保存，应用于后续任务。</p>
+              <div class="setting-row">
                 <div><label for="preset">处理预设</label><p>修改会应用到下一批任务。</p></div>
                 <select id="preset">
                   <option value="balanced">均衡（推荐）</option>
@@ -453,7 +481,7 @@
           <section class="settings-section" aria-labelledby="settings-performance">
             <div class="settings-section-head">
               <span class="section-index">02</span>
-              <div><h2 id="settings-performance">性能</h2><p>本机离线运行，无需安装 CUDA。</p></div>
+              <div><h2 id="settings-performance">性能</h2><p>本地 CPU 运行，无需安装 CUDA。</p></div>
             </div>
             <dl class="settings-facts">
               <div><dt>计算设备</dt><dd id="gpu-name">正在检测…</dd></div>
@@ -484,7 +512,7 @@
             </div>
             <div class="settings-section-body">
               <label class="settings-toggle">
-                <input type="checkbox" id="post-process-enabled">
+                <input type="checkbox" class="ui-switch" role="switch" id="post-process-enabled">
                 <span>启用批量后处理</span>
               </label>
 
@@ -504,7 +532,7 @@
               <div class="post-process-group">
                 <h3>水印</h3>
                 <label class="settings-toggle">
-                  <input type="checkbox" id="watermark-enabled">
+                  <input type="checkbox" class="ui-switch" role="switch" id="watermark-enabled">
                   <span>启用水印</span>
                 </label>
                 <div class="watermark-controls" hidden>
@@ -564,7 +592,7 @@
               <div class="post-process-group">
                 <h3>EXIF 元数据</h3>
                 <label class="settings-toggle">
-                  <input type="checkbox" id="exif-enabled">
+                  <input type="checkbox" class="ui-switch" role="switch" id="exif-enabled">
                   <span>启用 EXIF 写入</span>
                 </label>
                 <div class="exif-controls" hidden>
@@ -587,7 +615,7 @@
           <section class="settings-section" aria-labelledby="settings-data">
             <div class="settings-section-head">
               <span class="section-index">05</span>
-              <div><h2 id="settings-data">数据与支持</h2><p>照片、EXIF 和任务记录始终留在本机。</p></div>
+              <div><h2 id="settings-data">数据与支持</h2><p>管理本地照片元数据、任务记录与诊断信息。</p></div>
             </div>
             <div class="settings-section-body">
               <details class="runtime-details">
@@ -685,17 +713,17 @@
         </header>
         <div class="dialog-body">
           <div class="about-brand">
-                <img src="assets/icons/scan-line.svg" alt="" class="about-icon">
+                <img src="assets/app-logo.png" alt="" class="about-icon about-logo">
                 <strong class="about-name">消除车牌</strong>
                 <span class="about-version">版本 <b id="about-version-text">—</b></span>
               </div>
-              <p class="about-description">本地 AI 车牌消除工具，照片永不离开本机。</p>
+              <p class="about-description">面向汽车摄影的本地车牌检测与图像修复软件。</p>
               <p class="about-author">作者：Fang Dian（方典）</p>
               <p class="about-email">fangdian@tju.edu.cn</p>
               <p class="about-copyright">© 2026 Fang Dian（方典）. 保留所有权利。</p>
               <ul class="about-meta">
                 <li>AI 引擎：<b id="about-runtime">—</b></li>
-                <li>数据库 schema：<b id="about-schema">—</b></li>
+                <li>数据库版本：<b id="about-schema">—</b></li>
                 <li>许可：本地离线使用</li>
               </ul>
         </div>

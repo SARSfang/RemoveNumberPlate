@@ -84,6 +84,7 @@ class ImageProcessor:
             status=JobStatus.COMPLETED,
             detection_count=len(detections),
             detections=tuple(detections),
+            warnings=tuple(getattr(self._inpainter, "warnings", ())),
         )
 
 
@@ -123,4 +124,5 @@ class ManualMaskProcessor:
             output,
             time.perf_counter() - start,
             status=JobStatus.COMPLETED,
+            warnings=tuple(getattr(self._inpainter, "warnings", ())),
         )

@@ -215,8 +215,8 @@
       $("#progress-title").textContent = "批处理完成";
     }
     $("#batch-footer-status").textContent = state.running
-      ? `${values.finished} 张已完成 · 原片永不覆盖`
-      : "处理结束 · 原片永不覆盖";
+      ? `${values.finished} 张已完成 · 处理结果另存，保留原始文件`
+      : "处理结束 · 处理结果另存，保留原始文件";
     updateFollowingState(state);
     updateInspector(jobById(state.selectedId));
   }

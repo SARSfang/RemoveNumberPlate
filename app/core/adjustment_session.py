@@ -175,7 +175,14 @@ class AdjustmentSessionManager:
         self._session = None
 
     def cleanup_orphans(self) -> None:
+        self.invalidate()
         for candidate in self._cache_dir.iterdir():
             if candidate.is_file():
                 with suppress(OSError):
                     candidate.unlink()
+
+    def invalidate(self) -> None:
+        """Discard all saveable previews after repair configuration changes."""
+        with self._lock:
+            self._pending = None
+            self._discard_session_locked()

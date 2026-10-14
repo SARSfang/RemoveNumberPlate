@@ -2,6 +2,19 @@
   "schema_version": 1,
   "models": [
     {
+      "model_id": "big_lama_hd_optional",
+      "version": "sanster-add_big_lama-torchscript",
+      "filename": "big-lama.pt",
+      "sha256": "344c77bbcb158f17dd143070d1e789f38a66c04202311ae3a258ef66667a9ea9",
+      "source_url": "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt",
+      "homepage": "https://github.com/advimman/lama",
+      "format": "torchscript",
+      "software_license": "Apache-2.0",
+      "weights_terms": "Optional Big-LaMa TorchScript conversion distributed by IOPaint maintainer Sanster. Verified against published MD5 e3aa4aaa15225a33ec84f9f4bc47e500; SHA-256 measured locally. Not the original authors' checkpoint file.",
+      "build": {"kind": "download"},
+      "enabled": false
+    },
+    {
       "model_id": "pp_yoloe_s_vehicle",
       "version": "paddlex-3.0.0",
       "filename": "PP-YOLOE-S_vehicle_infer.tar",

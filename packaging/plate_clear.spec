@@ -17,6 +17,7 @@ datas = [
     (str(project_root / "THIRD_PARTY_NOTICES.md"), "."),
     (str(project_root / "RELEASE.md"), "."),
     (str(project_root / "docs" / "user-guide.md"), "docs"),
+    (str(project_root / "docs" / "hd-repair.md"), "docs"),
     (str(project_root / "docs" / "troubleshooting.md"), "docs"),
     (str(project_root / "docs" / "privacy.md"), "docs"),
     (str(project_root / "docs" / "release-checklist.md"), "docs"),

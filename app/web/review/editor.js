@@ -17,6 +17,7 @@
     selectedPolygonId: null,
     previewCommand: null,
     previewToken: null,
+    previewEpoch: 0,
     tool: "polygon",
     brushSize: 36,
     maskOpacity: .36,
@@ -182,6 +183,7 @@
   }
 
   function resetEditorState() {
+    state.previewEpoch += 1;
     state.current = null;
     state.image = null;
     state.resultImage = null;
@@ -563,6 +565,7 @@
   }
 
   function invalidatePreview() {
+    state.previewEpoch += 1;
     if (state.previewToken && state.current) {
       PlateApp.bridge.call("cancel_adjustment", state.current.id).catch(() => {});
     }
@@ -898,14 +901,24 @@
       return;
     }
     switch (event.name) {
+      case "repair_settings_changed":
+        invalidatePreview();
+        state.phase = "editing";
+        $("#review-risk-text").textContent = "修复设置已更新，请重新生成预览。";
+        updateEditorButtons();
+        draw();
+        break;
       case "adjustment_preview_started":
         state.phase = "rendering";
         $("#review-risk-text").textContent = "正在生成本地临时结果，不会写入输出文件夹…";
         updateEditorButtons();
         break;
       case "adjustment_preview_ready": {
+        const epoch = state.previewEpoch;
+        const jobId = state.current.id;
         const image = new Image();
         image.onload = () => {
+          if (state.previewEpoch !== epoch || !state.current || state.current.id !== jobId) return;
           state.resultImage = image;
           state.previewToken = payload.preview_token;
           state.phase = "preview_ready";

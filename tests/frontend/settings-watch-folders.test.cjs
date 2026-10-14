@@ -57,6 +57,8 @@ function loadSettingsModule(foldersFromList) {
   const calls = [];
   const storePatches = [];
   const selectors = [
+    "#repair-quality", "#texture-enabled", "#texture-strength",
+    "#texture-strength-value", "#hd-max-side",
     "#gpu-name",
     "#runtime-name",
     "#model-state",

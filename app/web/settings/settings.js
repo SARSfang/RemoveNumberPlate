@@ -5,6 +5,66 @@
 
   let namingPreviewTimer = null;
   const NAMING_SAMPLE = "DSC_0123.jpg";
+  let savedRepair = {};
+
+  const qualityButtons = () => [...document.querySelectorAll("[data-repair-quality]")];
+  function repairSaveState(state, message) {
+    const status = $("#repair-save-state");
+    if (!status) return;
+    status.dataset.state = state;
+    status.textContent = message;
+  }
+
+  function hydrateRepair(config) {
+    savedRepair = { quality: config.quality || "auto",
+      texture_enabled: config.texture_enabled ?? true,
+      texture_strength: config.texture_strength ?? 0.25,
+      hd_max_side: config.hd_max_side || 1536 };
+    $("#repair-quality").value = savedRepair.quality;
+    $("#texture-enabled").checked = savedRepair.texture_enabled;
+    $("#texture-strength").value = Math.round(savedRepair.texture_strength * 100);
+    $("#texture-strength-value").textContent = `${$("#texture-strength").value}%`;
+    $("#texture-strength").disabled = !savedRepair.texture_enabled;
+    $("#hd-max-side").value = savedRepair.hd_max_side;
+    $("#hd-max-side").disabled = savedRepair.quality === "standard";
+    qualityButtons().forEach((button) => {
+      const selected = button.dataset.repairQuality === savedRepair.quality;
+      button.setAttribute("aria-checked", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
+    const hint = $("#repair-quality-hint");
+    if (hint) hint.textContent = {
+      auto: "自动匹配修复区域大小，兼顾细节与速度；高清不可用时提示回退。",
+      standard: "使用标准模型，适合较小的修复区域。",
+      high: "优先保留局部细节，处理时间和内存占用更高。"
+    }[savedRepair.quality];
+  }
+
+  async function saveRepair() {
+    const controls = ["repair-quality", "texture-enabled", "texture-strength", "hd-max-side"];
+    const config = { quality: $("#repair-quality").value,
+      texture_enabled: $("#texture-enabled").checked,
+      texture_strength: Number($("#texture-strength").value) / 100,
+      hd_max_side: Number($("#hd-max-side").value) };
+    controls.forEach((id) => $(`#${id}`).disabled = true);
+    qualityButtons().forEach((button) => button.disabled = true);
+    repairSaveState("saving", "正在保存修复设置…");
+    try {
+      const response = await PlateApp.bridge.call("set_repair_config", config);
+      hydrateRepair(response.accepted ? response.repair_config : savedRepair);
+      repairSaveState(response.accepted ? "saved" : "error", response.message);
+      if (!response.accepted) PlateApp.toast.show(response.message);
+    } catch (error) {
+      hydrateRepair(savedRepair);
+      PlateApp.toast.show(`无法保存修复设置：${error.message || error}`);
+      repairSaveState("error", "保存失败，已恢复之前的设置。请重试。");
+    } finally {
+      controls.forEach((id) => $(`#${id}`).disabled = false);
+      $("#texture-strength").disabled = !savedRepair.texture_enabled;
+      $("#hd-max-side").disabled = savedRepair.quality === "standard";
+      qualityButtons().forEach((button) => button.disabled = false);
+    }
+  }
 
   async function savePreset(event) {
     const select = event.currentTarget;
@@ -67,6 +127,7 @@
   }
 
   function hydrate(bootstrap) {
+    hydrateRepair(bootstrap.repair_config || {});
     $("#gpu-name").textContent = bootstrap.gpu;
     $("#runtime-name").textContent = bootstrap.runtime;
     $("#model-state").textContent = bootstrap.models_ready
@@ -318,10 +379,14 @@
       toggle.className = "watch-folder-toggle";
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
+      checkbox.className = "ui-switch";
+      checkbox.setAttribute("role", "switch");
       checkbox.checked = Boolean(folder.enabled);
-      checkbox.addEventListener("change", () =>
-        toggleWatchFolder(folder.path, checkbox.checked)
-      );
+      checkbox.addEventListener("change", async () => {
+        checkbox.disabled = true;
+        try { await toggleWatchFolder(folder.path, checkbox.checked); }
+        finally { checkbox.disabled = false; }
+      });
       const toggleLabel = document.createElement("span");
       toggleLabel.textContent = folder.enabled ? "启用" : "已停用";
       toggle.appendChild(checkbox);
@@ -393,6 +458,29 @@
   }
 
   function init() {
+    qualityButtons().forEach((button) => {
+      button.addEventListener("click", async () => {
+        if ($("#repair-quality").value === button.dataset.repairQuality) return;
+        $("#repair-quality").value = button.dataset.repairQuality;
+        return saveRepair();
+      });
+      button.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const buttons = qualityButtons();
+        const index = buttons.indexOf(button);
+        const target = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1
+          : (index + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+        buttons[target].focus();
+        buttons[target].click();
+      });
+    });
+    ["repair-quality", "texture-enabled", "texture-strength", "hd-max-side"].forEach((id) => {
+      $(`#${id}`).addEventListener("change", saveRepair);
+    });
+    $("#texture-strength").addEventListener("input", (event) => {
+      $("#texture-strength-value").textContent = `${event.currentTarget.value}%`;
+    });
     $("#preset").addEventListener("change", savePreset);
     $("#default-mask-margin").addEventListener("input", (event) => {
       renderMaskMargin(event.currentTarget.value);

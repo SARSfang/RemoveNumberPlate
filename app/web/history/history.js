@@ -95,8 +95,8 @@
         : "暂无任务记录";
       const description = document.createElement("span");
       description.textContent = state.jobs.length
-        ? "在这里查看状态、风险和输出。"
-        : "完成处理后，记录会安全地保存在本机。";
+        ? "查看任务状态、复核提示与输出文件。"
+        : "处理完成后，可在此查看任务记录。";
       empty.append(icon, title, description);
       detail.appendChild(empty);
       return;

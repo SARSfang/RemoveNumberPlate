@@ -123,6 +123,15 @@ img {
   height: 23px;
 }
 
+.brand-icon.brand-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2);
+}
+
 .local-chip {
   padding: 3px 8px;
   border: 1px solid var(--border);

@@ -26,6 +26,10 @@
   }
 
   const api = {
+    async set_repair_config(config) {
+      dispatch("repair_settings_changed", {});
+      return {accepted: true, message: "修复设置已保存，旧预览已清除。", repair_config: config};
+    },
     async bootstrap() {
       if (startupMode === "failed") {
         throw new Error("无法读取本地运行环境");

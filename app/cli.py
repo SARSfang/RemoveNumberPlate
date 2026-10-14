@@ -12,11 +12,12 @@ from app.core.batch import BatchReport, process_batch, resume_batch
 from app.core.job_store import JobStore
 from app.core.mask_builder import DEFAULT_MARGIN_RATIO, PlateMaskPolicy
 from app.core.pipeline import ImageProcessor, ManualMaskProcessor
+from app.core.repair_config import RepairConfig
 from app.core.two_stage_detector import VehicleFirstPlateDetector
 from app.domain.job import JobStatus
-from app.infrastructure.lama_inpainter import LamaInpainter
 from app.infrastructure.model_registry import load_manifest
 from app.infrastructure.onnx_detectors import OnnxPlateDetector, OnnxVehicleDetector
+from app.infrastructure.quality_inpainter import QualityInpainter
 
 
 def _verify_enabled_models(paths: AppPaths) -> None:
@@ -31,6 +32,7 @@ def _verify_enabled_models(paths: AppPaths) -> None:
 def build_processor(
     auto_confidence: float,
     mask_margin_ratio: float = DEFAULT_MARGIN_RATIO,
+    repair_config: RepairConfig | None = None,
 ) -> ImageProcessor:
     paths = AppPaths.default()
     _verify_enabled_models(paths)
@@ -42,7 +44,7 @@ def build_processor(
             limit_type="min",
         ),
     )
-    inpainter = LamaInpainter(paths.models_dir / "inpainting_lama_2025jan.onnx")
+    inpainter = QualityInpainter(paths.models_dir, repair_config or RepairConfig())
     return ImageProcessor(
         detector,
         inpainter,
@@ -51,11 +53,11 @@ def build_processor(
     )
 
 
-def build_manual_processor() -> ManualMaskProcessor:
+def build_manual_processor(repair_config: RepairConfig | None = None) -> ManualMaskProcessor:
     paths = AppPaths.default()
     _verify_enabled_models(paths)
     return ManualMaskProcessor(
-        LamaInpainter(paths.models_dir / "inpainting_lama_2025jan.onnx")
+        QualityInpainter(paths.models_dir, repair_config or RepairConfig())
     )
 
 

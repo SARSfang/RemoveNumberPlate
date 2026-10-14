@@ -18,6 +18,7 @@ class ProcessingResult:
     detection_count: int = 0
     error: str | None = None
     detections: tuple[Detection, ...] = ()
+    warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.elapsed_seconds < 0:

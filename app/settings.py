@@ -15,6 +15,7 @@ from app.core.mask_builder import (
     MAXIMUM_MARGIN_RATIO,
     MINIMUM_MARGIN_RATIO,
 )
+from app.core.repair_config import RepairConfig
 from app.core.watermark import WatermarkConfig
 
 DEFAULT_PRESET = "balanced"
@@ -57,6 +58,7 @@ class WatchFolder:
 
 @dataclass(frozen=True, slots=True)
 class UserSettings:
+    repair_config: RepairConfig = field(default_factory=RepairConfig)
     preset: str = DEFAULT_PRESET
     mask_margin_ratio: float = DEFAULT_MARGIN_RATIO
     watch_folders: tuple[WatchFolder, ...] = ()
@@ -64,6 +66,8 @@ class UserSettings:
     current_project_id: str | None = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.repair_config, RepairConfig):
+            raise ValueError("repair_config must be RepairConfig")
         if self.preset not in PRESETS:
             raise ValueError(f"unknown processing preset: {self.preset}")
         if (
@@ -103,6 +107,7 @@ class SettingsStore:
             value = json.loads(self.path.read_text(encoding="utf-8"))
             return (
                 UserSettings(
+                    repair_config=RepairConfig.parse(value.get("repair_config")),
                     preset=str(value.get("preset", DEFAULT_PRESET)),
                     mask_margin_ratio=value.get(
                         "mask_margin_ratio",
@@ -137,6 +142,7 @@ class SettingsStore:
         temporary.write_text(
             json.dumps(
                 {
+                    "repair_config": settings.repair_config.as_dict(),
                     "preset": settings.preset,
                     "mask_margin_ratio": settings.mask_margin_ratio,
                     "watch_folders": [

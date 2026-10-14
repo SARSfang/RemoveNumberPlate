@@ -22,8 +22,11 @@
 | `ppvehicle_plate_onnx` | 车牌检测（生产 ONNX） | onnx-opset14 | PaddleDetection b25522a → Paddle2ONNX 2.1.0 转换 | Apache-2.0 | 是 |
 | `migan_inpainter` | 图像修复（实验，已弃用） | onnx | MI-GAN 官方预转换 | MIT | 否 |
 | `opencv_lama_inpainter` | 图像修复（生产 ONNX） | onnx | OpenCV `inpainting_lama` 仓库 | Apache-2.0 | 是 |
+| `big_lama_hd_optional` | 高清图像修复（可选组件） | torchscript | Sanster / Big-LaMa 转换版 | Apache-2.0 | 可选 |
 
 > 说明：两个 Paddle 原始归档（`pp_yoloe_s_vehicle`、`pp_vehicle_plate_detector`）本身不参与生产推理，仅作为「离线转换」的源模型，用于重建对应的 ONNX 权重。`migan_inpainter` 曾在视觉评审中失败，现已停用，保留记录仅供追溯。
+
+高清组件在清单中 enabled=false，表示不是标准版必需组件，并非停用。安装后由质量路由按需使用，运行前独立校验 SHA-256。高清后端、安装和实测性能见 [高清修复说明](hd-repair.md)。
 
 ## 3. 各模型详解
 
@@ -55,7 +58,7 @@
 - **文件**：`inpainting_lama_2025jan.onnx`（生产，量化版，单文件）。
 - **输入**：`image`（512×512 方形上下文裁剪，BGR、归一化到 [0,1]）；`mask`（512×512，遮罩）。
 - **输出**：`output`（512×512×3，修复后的图像块）。
-- **预/后处理**：围绕遮罩区域取方形上下文裁剪（默认 4× 上下文），推理后做高斯羽化合成回原图，保证未选中像素逐位不变（见 `app/infrastructure/lama_inpainter.py`）。
+- **预/后处理**：生产流程使用自适应局部上下文；标准模型保持纵横比缩放并补边到 512，小裁剪不放大。过渡限制在遮罩内，合成阶段范围外像素保持一致；JPEG 再编码仍可能改变像素。
 - **来源**：OpenCV 账户发布的 `inpainting_lama` 仓库，仓库内文件均声明 Apache-2.0。
 - **许可**：Apache-2.0。
 

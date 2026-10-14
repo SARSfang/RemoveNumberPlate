@@ -12,12 +12,13 @@ from PIL import Image
 from app import desktop
 from app.core.job_store import JobStore
 from app.core.watch_folder import WatchFolderService
+from app.core.watermark import WatermarkConfig
 from app.desktop import BatchService, DesktopApi, frontend_directory
 from app.domain.detection import BoundingBox, Detection, Quadrilateral
 from app.domain.job import JobStatus
 from app.domain.result import ProcessingResult
 from app.release_readiness import ModelReadiness, StorageReadiness
-from app.settings import SettingsStore, UserSettings, WatchFolder
+from app.settings import PostProcessConfig, SettingsStore, UserSettings, WatchFolder
 
 
 class FakeProcessor:
@@ -1082,3 +1083,78 @@ def test_desktop_api_remains_private_object_graph(tmp_path: Path) -> None:
     api = _make_api(tmp_path)
 
     assert all(name.startswith("_") for name in vars(api))
+
+
+def _api_with_full_settings(tmp_path: Path) -> DesktopApi:
+    """Build an API carrying every persisted settings field.
+
+    Regression guard: ``DesktopApi`` must never rebuild ``UserSettings`` from
+    scratch, because that silently drops watch folders, post-processing config
+    and the current project selection.
+    """
+
+    api = _make_api(
+        tmp_path,
+        watch_folders=(
+            WatchFolder(
+                path=str(tmp_path),
+                enabled=True,
+                added_at="2026-07-29T10:00:00Z",
+            ),
+        ),
+    )
+    api._settings = UserSettings(
+        preset=api._settings.preset,
+        mask_margin_ratio=api._settings.mask_margin_ratio,
+        watch_folders=api._settings.watch_folders,
+        post_process_config=PostProcessConfig(
+            enabled=True,
+            naming_template="{original}_delivered{ext}",
+            watermark=WatermarkConfig(enabled=True, text="Studio"),
+        ),
+        current_project_id="proj-123",
+    )
+    api._settings_store.save(api._settings)
+    return api
+
+
+def _assert_unrelated_fields_preserved(saved: UserSettings) -> None:
+    assert len(saved.watch_folders) == 1
+    assert saved.post_process_config.enabled is True
+    assert saved.post_process_config.naming_template == "{original}_delivered{ext}"
+    assert saved.post_process_config.watermark.text == "Studio"
+    assert saved.current_project_id == "proj-123"
+
+
+def test_set_preset_preserves_unrelated_settings(tmp_path: Path) -> None:
+    api = _api_with_full_settings(tmp_path)
+
+    response = api.set_preset("quality")
+
+    assert response["accepted"] is True
+    saved = api._settings_store.load()
+    assert saved.preset == "quality"
+    _assert_unrelated_fields_preserved(saved)
+
+
+def test_set_mask_margin_preserves_unrelated_settings(tmp_path: Path) -> None:
+    api = _api_with_full_settings(tmp_path)
+
+    response = api.set_mask_margin(72)
+
+    assert response["accepted"] is True
+    saved = api._settings_store.load()
+    assert saved.mask_margin_ratio == pytest.approx(0.72)
+    _assert_unrelated_fields_preserved(saved)
+
+
+def test_watch_folder_change_preserves_unrelated_settings(tmp_path: Path) -> None:
+    api = _api_with_full_settings(tmp_path)
+
+    api._persist_watch_folders()
+
+    saved = api._settings_store.load()
+    assert len(saved.watch_folders) == 1
+    assert saved.post_process_config.enabled is True
+    assert saved.post_process_config.naming_template == "{original}_delivered{ext}"
+    assert saved.current_project_id == "proj-123"

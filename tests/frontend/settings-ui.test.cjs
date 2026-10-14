@@ -30,6 +30,9 @@ function loadSettingsModule() {
     "utf8"
   );
   const selectors = [
+    "#repair-quality", "#texture-enabled", "#texture-strength",
+    "#texture-strength-value", "#hd-max-side",
+    "#repair-quality-hint", "#repair-save-state",
     "#gpu-name",
     "#runtime-name",
     "#model-state",
@@ -86,12 +89,22 @@ function loadSettingsModule() {
   });
   const radioByName = { text: textRadio, image: imageRadio };
   const calls = [];
+  const qualityOptions = ["auto", "standard", "high"].map((quality) => {
+    const element = createElement();
+    element.dataset.repairQuality = quality;
+    element.focus = () => { element.focused = true; };
+    element.click = () => element.listeners.click();
+    return element;
+  });
   const context = {
     window: {
       PlateApp: {
         bridge: {
           async call(method, ...args) {
             calls.push([method, ...args]);
+            if (method === "set_repair_config") {
+              return { accepted: true, message: "已保存", repair_config: args[0] };
+            }
             return { accepted: true, message: "已保存" };
           }
         },
@@ -108,6 +121,7 @@ function loadSettingsModule() {
         return elements[selector];
       },
       querySelectorAll(selector) {
+        if (selector === "[data-repair-quality]") return qualityOptions;
         if (selector === 'input[name="watermark-type"]') {
           return [textRadio, imageRadio];
         }
@@ -118,6 +132,7 @@ function loadSettingsModule() {
   vm.runInNewContext(source, context);
   return {
     calls,
+    qualityOptions,
     elements,
     radioByName,
     settings: context.window.PlateApp.settings
@@ -149,6 +164,43 @@ test("global mask margin hydrates, warns, and saves as a percentage", async () =
   await range.listeners.change({ currentTarget: range });
   assert.deepEqual(fixture.calls.at(-1), ["set_mask_margin", 100]);
   assert.equal(range.dataset.savedValue, "100");
+});
+
+test("repair defaults enable texture and persist quality and intensity", async () => {
+  const fixture = loadSettingsModule();
+  fixture.settings.init();
+  fixture.settings.hydrate({ gpu: "CPU", runtime: "ONNX", models_ready: true,
+    webview2_version: "138", preset: "balanced" });
+  assert.equal(fixture.elements["#texture-enabled"].checked, true);
+  assert.equal(fixture.elements["#repair-quality"].value, "auto");
+  const quality = fixture.elements["#repair-quality"];
+  quality.value = "high";
+  fixture.elements["#texture-strength"].value = "40";
+  await quality.listeners.change();
+  const call = fixture.calls.find((entry) => entry[0] === "set_repair_config");
+  assert.equal(call[1].quality, "high");
+  assert.equal(call[1].texture_strength, 0.4);
+  const toggle = fixture.elements["#texture-enabled"];
+  toggle.checked = false;
+  await toggle.listeners.change();
+  assert.equal(fixture.calls.at(-1)[1].texture_enabled, false);
+  assert.equal(fixture.elements["#texture-strength"].disabled, true);
+});
+
+test("quality segments save selections and expose keyboard radio state", async () => {
+  const fixture = loadSettingsModule();
+  fixture.settings.init();
+  fixture.settings.hydrate({ gpu: "CPU", runtime: "ONNX", models_ready: true,
+    webview2_version: "138", preset: "balanced" });
+  await fixture.qualityOptions[2].listeners.click();
+  assert.equal(fixture.calls.at(-1)[1].quality, "high");
+  assert.equal(fixture.qualityOptions[2].attributes["aria-checked"], "true");
+  assert.equal(fixture.qualityOptions[2].tabIndex, 0);
+  fixture.qualityOptions[2].listeners.keydown({ key: "Home", preventDefault() {} });
+  await new Promise(setImmediate);
+  assert.equal(fixture.calls.at(-1)[1].quality, "auto");
+  assert.equal(fixture.qualityOptions[0].focused, true);
+  assert.equal(fixture.elements["#repair-save-state"].dataset.state, "saved");
 });
 
 test("all stylesheet custom-property references are defined", () => {

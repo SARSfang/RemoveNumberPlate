@@ -17,6 +17,22 @@ def test_context_bounds_are_square_and_inside_image() -> None:
     assert 0 <= y1 < y2 <= 100
 
 
+def test_context_bounds_contains_wide_mask_on_short_image() -> None:
+    mask = np.zeros((100, 1000), dtype=np.uint8)
+    mask[30:70, 100:800] = 255
+    x1, y1, x2, y2 = _context_bounds(mask, 2)
+    assert x1 <= 100 and x2 >= 800 and y1 <= 30 and y2 >= 70
+
+
+def test_feather_does_not_modify_any_unselected_pixel() -> None:
+    original = np.random.default_rng(5).integers(0, 256, (80, 80, 3), dtype=np.uint8)
+    generated = np.full_like(original, 200)
+    mask = np.zeros((80, 80), dtype=np.uint8)
+    mask[20:60, 20:60] = 255
+    result = _feathered_composite(original, generated, mask, 12)
+    np.testing.assert_array_equal(result[mask == 0], original[mask == 0])
+
+
 def test_feathered_composite_replaces_mask_core() -> None:
     original = np.zeros((40, 40, 3), dtype=np.uint8)
     generated = np.full_like(original, 200)

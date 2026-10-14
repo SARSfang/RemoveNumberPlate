@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="消除车牌：面向汽车摄影的 Windows 离线工具。支持多车牌识别、局部修复、批量处理与人工复核，高清测试版可体验。">
+  <meta name="theme-color" content="#f5f4ef">
+  <link rel="canonical" href="https://fangdian.xyz/remove-number-plate/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="消除车牌 — 让汽车照片，专注于车本身。">
+  <meta property="og:description" content="本地离线识别并修复车牌，支持多车牌处理与人工复核。">
+  <meta property="og:url" content="https://fangdian.xyz/remove-number-plate/">
+  <meta property="og:image" content="https://fangdian.xyz/remove-number-plate/assets/high.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="./assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="./styles.css?v=20261014p2">
+  <script src="./site.js?v=20261014p2" defer></script>
+  <title>消除车牌 — 面向汽车摄影的离线修复工具</title>
+</head>
+<body>
+  <a class="skip" href="#main">跳到主要内容</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#main" aria-label="消除车牌首页"><img src="./assets/logo.png" width="36" height="36" alt=""><span>消除车牌</span><span class="brand-caption">BY FANG DIAN</span></a>
+      <nav aria-label="页面导航"><a href="#compare">效果</a><a href="#features">功能</a><a href="#project">项目</a><a class="nav-download" href="#download">获取软件 <span aria-hidden="true">↗</span></a></nav>
+    </div>
+  </header>
+  <main id="main">
+    <section class="hero container" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="line"></span> BUILT FOR AUTOMOTIVE PHOTOGRAPHY</div>
+        <h1 id="hero-title">让汽车照片，<br>专注于<span>车本身。</span></h1>
+        <div class="hero-deck"><p>本地离线识别并修复车牌。<br>多车牌处理、大图修复，最后由你复核。</p><div class="hero-actions"><a class="button primary" href="#download">获取 Windows 版 <span aria-hidden="true">↗</span></a><a class="text-link" href="#compare">看看修复效果 <span aria-hidden="true">↓</span></a></div></div>
+      </div>
+      <div class="hero-showcase" aria-label="完整修复照片与同位置局部放大">
+        <div class="hero-full-column"><figure class="hero-full-frame"><img src="./assets/high-full.webp" width="1280" height="1920" alt="高清消除车牌后的完整照片，包含汽车、墙面与地面，保留原始构图" fetchpriority="high"><span class="crop-outline" aria-hidden="true"><span>放大范围</span></span></figure><span class="full-caption">完整构图 · 高清修复后</span></div>
+        <div class="hero-detail-column"><div class="detail-heading"><span class="eyebrow">A CLOSER LOOK</span><span class="detail-index">01 / DETAIL</span></div><h2>完整照片，<br>也经得起细看。</h2><p>保留原来的画面。<br>把车牌区域，放大给你看。</p><figure class="hero-inset"><img src="./assets/high.webp" width="1004" height="1004" alt="左侧照片中标记范围的放大子图，展示高清修复后的格栅细节"><figcaption><span><i></i>车牌区域 · 局部放大</span><span>HIGH-RES REPAIR</span></figcaption></figure><a class="showcase-link" href="#compare">查看消除前后 <span aria-hidden="true">↓</span></a></div>
+      </div>
+      <div class="hero-foot"><span>Windows 10 / 11 · 64 位</span><span>本地处理</span><span>结果另存</span><a href="./LICENSE.txt">个人及非商业使用</a></div>
+    </section>
+
+    <section class="section container" id="compare" aria-labelledby="compare-title">
+      <div class="section-heading"><p class="eyebrow">01 / THE DIFFERENCE</p><div><h2 id="compare-title">效果，让照片说话。</h2><p>先看车牌消除前后，再看高清修复的细节改善。两组均为同一张实拍照片。</p></div></div>
+      <div class="comparison-subheading"><h3>车牌消除前后</h3><span>原始照片 / 高清修复</span></div>
+      <div class="comparison-group" data-comparison data-before-label="消除前" data-after-label="高清消除后">
+        <div class="comparison" id="removal-comparison" style="--split:50%">
+          <img class="comparison-image" src="./assets/high.webp" width="1004" height="1004" alt="高清消除车牌后的汽车格栅局部" loading="lazy">
+          <div class="comparison-before"><img class="comparison-image" src="./assets/original.webp" width="1004" height="1004" alt="消除前的同位置局部，蓝色车牌仍在格栅前方" loading="lazy"></div>
+          <span class="image-label before-label">消除前</span><span class="image-label after-label">高清消除后</span>
+          <div class="split-line" aria-hidden="true"><span>↔</span></div>
+          <input class="comparison-range" type="range" min="0" max="100" value="50" aria-label="消除前显示比例" aria-valuetext="消除前 50%，高清消除后 50%">
+        </div>
+        <div class="comparison-toolbar"><p><span class="small-dot"></span>拖动看变化 · 支持方向键调节</p><div class="comparison-buttons"><button type="button" class="quiet-button" data-zoom aria-pressed="false" aria-label="放大消除前后细节">放大细节 <span aria-hidden="true">＋</span></button><button type="button" class="quiet-button" data-reset aria-label="重置消除前后对比">重置对比 <span aria-hidden="true">↺</span></button></div></div>
+      </div>
+      <p class="fineprint">原始照片与高清修复结果的同位置局部对比，未额外锐化。网页使用压缩展示图；原片与修复输出的完整尺寸均为 3842 × 5763。</p>
+      <noscript><p class="fineprint">可直接查看：<a href="./assets/original.webp">消除前</a> · <a href="./assets/high.webp">高清消除后</a>。</p></noscript>
+      <div class="comparison-subheading second-comparison"><h3>高清修复改善</h3><span>旧版修复 / 高清修复</span></div>
+      <div class="comparison-group" data-comparison data-before-label="旧版修复" data-after-label="高清修复">
+      <div class="comparison" id="comparison" style="--split:50%">
+        <img class="comparison-image" src="./assets/high.webp" width="1004" height="1004" alt="高清修复的格栅局部" loading="lazy">
+        <div class="comparison-before"><img class="comparison-image" src="./assets/legacy.webp" width="1004" height="1004" alt="旧版修复的同位置格栅局部" loading="lazy"></div>
+        <span class="image-label before-label">旧版修复</span><span class="image-label after-label">高清修复</span>
+        <div class="split-line" aria-hidden="true"><span>↔</span></div>
+        <input id="comparison-range" class="comparison-range" type="range" min="0" max="100" value="50" aria-label="旧版修复显示比例" aria-valuetext="旧版修复 50%，高清修复 50%">
+      </div>
+      <div class="comparison-toolbar"><p><span class="small-dot"></span>PFDA0512 · 实拍局部对比</p><div class="comparison-buttons"><button type="button" class="quiet-button" id="zoom-button" data-zoom aria-pressed="false" aria-label="放大高清修复细节">放大细节 <span aria-hidden="true">＋</span></button><button type="button" class="quiet-button" id="reset-button" data-reset aria-label="重置高清修复对比">重置对比 <span aria-hidden="true">↺</span></button></div></div>
+      </div>
+      <p class="fineprint">展示的是旧版与高清修复结果，并非原图与结果。两张图使用相同裁剪和展示倍率，未额外锐化；本例纹理增强因强结构边缘自动跳过。不同照片的效果会有差异。</p>
+      <noscript><p class="fineprint">当前浏览器未启用脚本，以下图片可直接查看：<a href="./assets/legacy.webp">旧版修复</a> · <a href="./assets/high.webp">高清修复</a>。</p></noscript>
+    </section>
+
+    <section class="section container" id="features" aria-labelledby="features-title">
+      <div class="section-heading"><p class="eyebrow">02 / RECENT UPDATES</p><div><h2 id="features-title">从一块车牌，<br>到整张照片的细节。</h2><p>近期两项升级，回应真实照片处理中的问题。</p></div></div>
+      <div class="feature-grid">
+        <article class="feature"><span class="feature-number">01 — MULTIPLE PLATES</span><h3>多车牌，分别处理。</h3><p>车辆区域检测之外，增加整图补充检测，减少遗漏。多个车牌分别修复，避免相距很远的区域共用一块填充。</p><div class="plate-list" aria-label="选择保留功能示意，非实测截图"><div class="demo-caption">区域清单示意</div><div><span>车牌区域 01</span><span class="list-state"><i></i>消除</span></div><div><span>车牌区域 02</span><span class="list-state preserve">保留</span></div><div><span>车牌区域 03</span><span class="list-state"><i></i>消除</span></div></div><p class="feature-note">在复核编辑器里，选择消除哪些、保留哪些。</p></article>
+        <article class="feature"><span class="feature-number">02 — HIGH-RESOLUTION REPAIR</span><h3>大图，少一点模糊感。</h3><p>新增高清修复模式，按局部区域处理，改善填充区域与周围清晰度不一致的问题，保留输出照片的原始尺寸。</p><div class="quality-demo" aria-label="高清设置示意，非可操作的软件设置"><div class="demo-caption">设置示意 · 高清测试版</div><div class="quality-options"><span class="selected">自动</span><span>标准</span><span>高清</span></div><div class="texture-row"><span>纹理增强<small>默认开启 · 按画面条件生效</small></span><span class="switch-illustration" aria-hidden="true"></span></div></div><p class="feature-note">可关闭纹理增强；高清处理通常需要更多时间与内存。</p></article>
+      </div>
+    </section>
+
+    <section class="workflow-section" id="workflow" aria-labelledby="workflow-title"><div class="container">
+      <div class="section-heading"><p class="eyebrow">03 / YOUR WORKFLOW</p><div><h2 id="workflow-title">自动处理，<br>保留你的判断。</h2><p>从导入到另存，关键步骤都可以复核。</p></div></div>
+      <ol class="steps"><li><span class="step-number">01</span><h3>导入照片</h3><p>拖入单张或一组照片，开始本地处理。照片留在你的电脑上。</p></li><li><span class="step-number">02</span><h3>识别与修复</h3><p>检测车牌，沿区域生成遮罩，再对各个区域进行局部填充。</p></li><li><span class="step-number">03</span><h3>复核后另存</h3><p>查看前后对比，调整区域或保留部分车牌；结果另存，不覆盖原图。</p></li></ol>
+      <div class="workflow-extras"><div><span class="eyebrow">FIT INTO YOUR EDITING</span><h3>适合一张，也适合一批。</h3></div><div><p>批量处理、区域微调与历史对比，帮助整理成片交付前的重复工作。</p><details><summary>还有这些工作流选项 <span aria-hidden="true">＋</span></summary><p>可配置监视文件夹、输出命名、水印与 EXIF 信息。按需要开启，保留自己的后期流程。</p></details></div></div>
+    </div></section>
+
+    <section class="section container" id="download" aria-labelledby="download-title">
+      <div class="section-heading"><p class="eyebrow">04 / GET THE APP</p><div><h2 id="download-title">选择适合你的版本。</h2><p>Windows 10 / 11，64 位。本地运行，无需自行安装 Python。</p></div></div>
+      <div class="download-grid">
+        <article class="download-card"><div class="download-top"><span class="badge">正式版</span><span class="version">v1.0.1</span></div><h3>日常批量处理</h3><p>包含多车牌检测、分别修复与区域选择。适合日常照片处理和复核。</p><dl><div><dt>发布</dt><dd>2026.08.17</dd></div><div><dt>安装包</dt><dd>约 158 MB</dd></div></dl><a class="button primary" href="https://github.com/SARSfang/RemoveNumberPlate" target="_blank" rel="noopener noreferrer">前往 GitHub 仓库 <span aria-hidden="true">↗</span></a><p class="download-note">通过仓库了解项目、查看发布资产与更新说明。网页不会自动下载软件。</p></article>
+        <article class="download-card hd-card"><div class="download-top"><span class="badge beta">高清测试版</span><span class="version">PREVIEW</span></div><h3>更关注大图细节</h3><p>增加高清修复与纹理增强设置，包含独立运行组件。测试版效果已用实拍照片验收。</p><dl><div><dt>运行组件</dt><dd>CPU 版已验证</dd></div><div><dt>完整目录</dt><dd>约 1 GiB</dd></div></dl><a class="button secondary" href="https://github.com/SARSfang/RemoveNumberPlate" target="_blank" rel="noopener noreferrer">前往 GitHub 仓库 <span aria-hidden="true">↗</span></a><p class="download-note">高清测试版尚未公开上传，请以仓库发布状态为准。完整目录需解压后运行，并保留随包依赖与许可文件。</p></article>
+      </div>
+      <div class="license-note"><span class="small-dot"></span><p>个人及非商业用途可使用。商业使用需另行授权，详见<a href="./LICENSE.txt">软件许可</a>。第三方组件遵循各自许可。</p></div>
+    </section>
+
+    <section class="project-section" id="project" aria-labelledby="project-title"><div class="container project-layout"><div><p class="eyebrow">05 / BEHIND THE PROJECT</p><h2 id="project-title">从汽车摄影，<br>长出来的小工具。</h2><div class="author"><img src="./assets/logo.png" width="44" height="44" alt=""><div><strong>Fang Dian / 方典</strong><span>产品需求 · 架构设计 · 验证与发布</span></div></div></div><div class="project-body"><p>汽车照片准备分享时，去除车牌是一项重复而细致的工作：需要照顾隐私，也希望留下车身和格栅的质感。</p><p>这个项目把识别、局部修复和人工复核放在一个离线桌面工具里。自动化负责重复步骤，最终效果仍由使用者确认。</p><p class="project-credit">代码采用 AI 辅助编程，作者负责需求、架构与发布代码审查。源码公开，采用非商用许可。</p><div class="project-links"><a class="text-link" href="https://github.com/SARSfang/RemoveNumberPlate" target="_blank" rel="noopener noreferrer">查看源码 <span aria-hidden="true">↗</span></a><a class="text-link" href="https://me.fangdian.xyz/development/remove-number-plate.html">项目档案 <span aria-hidden="true">↗</span></a></div><details><summary>了解它如何工作 <span aria-hidden="true">＋</span></summary><p>检测结果生成局部遮罩，修复模型填充区域，之后由编辑器复核。标准版使用 ONNX Runtime 与 LaMa；高清测试版增加 Big-LaMa 独立组件，桌面界面使用 WebView2。</p><p>填充是根据周边内容生成的结果，不能恢复被车牌遮挡的真实表面。复杂反光、格栅和小车牌需要特别复核。</p></details></div></div></section>
+
+    <section class="section container faq-section" aria-labelledby="faq-title"><div class="section-heading"><p class="eyebrow">06 / GOOD TO KNOW</p><div><h2 id="faq-title">使用前，你可能想知道。</h2></div></div><div class="faq-list">
+      <details><summary>照片会上传吗？<span aria-hidden="true">＋</span></summary><p>软件的照片识别、修复与复核都在本机完成，无需上传照片。本网页仅展示预先准备的示例，没有上传照片或在线修复功能。</p></details>
+      <details><summary>会覆盖我的原图吗？<span aria-hidden="true">＋</span></summary><p>处理结果另存，原图保留。输出照片保持输入尺寸；最终文件的压缩和元信息仍取决于导出设置。</p></details>
+      <details><summary>所有车牌都能自动检测到吗？<span aria-hidden="true">＋</span></summary><p>不能保证。远处小车牌、倾斜、遮挡和反光可能造成漏检或误检。可以在复核编辑器调整区域，并选择保留或消除。</p></details>
+      <details><summary>高清修复为什么更慢？<span aria-hidden="true">＋</span></summary><p>更大的局部区域需要更多计算与内存。高清测试版默认使用自动模式，可调整处理上限。CPU 已验证，GPU 路径尚未验收；实际速度取决于照片与电脑配置。</p></details>
+      <details><summary>纹理增强会一直生效吗？<span aria-hidden="true">＋</span></summary><p>不会。开关默认开启，但仅在邻近细节适合时补充纹理；强结构边缘、颜色不匹配或来源不足会自动跳过。开关与强度均可调整。</p></details>
+      <details><summary>商业照片处理可以直接使用吗？<span aria-hidden="true">＋</span></summary><p>当前许可仅授予个人及非商业用途。用于商业摄影或服务前，请联系作者确认授权。<a href="./LICENSE.txt">阅读完整许可</a>。</p></details>
+      <details><summary>遇到问题，怎样反馈？<span aria-hidden="true">＋</span></summary><p>可以在 <a href="https://github.com/SARSfang/RemoveNumberPlate/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 描述版本、问题和复现步骤。分享照片前，请检查隐私并确认有权公开。</p></details>
+    </div></section>
+  </main>
+  <footer class="container footer"><div class="footer-main"><a class="brand" href="#main"><img src="./assets/logo.png" width="32" height="32" alt=""><span>消除车牌</span></a><p>为照片留出更多空间。</p><a class="text-link" href="https://me.fangdian.xyz/">返回 Fang Dian <span aria-hidden="true">↗</span></a></div><div class="footer-meta"><span>© 2026 Fang Dian</span><div><a href="./LICENSE.txt">非商用许可</a><a href="./THIRD_PARTY_NOTICES.txt">第三方许可说明</a><a href="https://github.com/SARSfang/RemoveNumberPlate/issues" target="_blank" rel="noopener noreferrer">反馈</a></div></div></footer>
+</body>
+</html>
