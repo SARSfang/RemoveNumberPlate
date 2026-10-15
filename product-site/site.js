@@ -98,6 +98,14 @@
     document.querySelectorAll('main section[id]').forEach(s => {
       if (spyTargets.has(s.id)) spy.observe(s);
     });
+    const heroSection = document.querySelector('.hero');
+    if (heroSection) {
+      new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          navLinks.forEach(a => a.removeAttribute('aria-current'));
+        }
+      }, { threshold: 0.15 }).observe(heroSection);
+    }
   }
 
   /* ---------- 一键复制 SHA-256 ---------- */
@@ -150,7 +158,7 @@
     bar.removeAttribute('hidden');
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(es => {
-        es.forEach(e => { pastHero = !e.isIntersecting; });
+        es.forEach(e => { pastHero = !e.isIntersecting && e.boundingClientRect.bottom <= 95; });
         apply();
       }, { threshold: 0.05 }).observe(hero);
       if (download) {
