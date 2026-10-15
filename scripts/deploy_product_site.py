@@ -22,6 +22,7 @@ ALLOWED = PAGES | {
     "LICENSE.txt", "THIRD_PARTY_NOTICES.txt", "assets/logo.png",
     "assets/original.webp", "assets/legacy.webp", "assets/high.webp",
     "assets/high-full.webp",
+    "assets/pfd32132-result-960.webp", "assets/pfd32132-result-1920.webp",
 }
 
 

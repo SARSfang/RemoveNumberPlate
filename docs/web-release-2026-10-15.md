@@ -38,3 +38,13 @@
 - Nginx 原配置：`/opt/sitewide-visual-backups/rnp-product-1792039203/nginx-paiche.before`；变更哈希：同目录 `nginx-change.json`。
 
 回退时保留当前产品目录，再将首次旧目录换回正式路径；核对 Nginx 未有后续修改后，按需恢复原配置并通过检查后 reload。复验 HTTPS、文件哈希与错误路径。
+
+## 补充第二张实拍成片
+
+同日用户提供 `PFD32132_clean.jpg` 并授权放入介绍页。将路虎侧前方横幅成片加入效果区，保留完整构图和原水印；只标注为处理后结果，不推断使用的质量模式。
+
+- 原始输出 4993 × 2809、7,289,133 字节；源文件 SHA-256 `adfc6b6c8a87297c1781fa3146d046ed850e665cadbbcba313a8aac72a434881`，生成网页副本后重新核对未改变。
+- 生成 960 和 1920 像素宽的 WebP 副本，分别 56,830 和 213,168 字节，响应式加载。原 JPEG 与对应原图未上传。
+- 缓存版本 `20261015p9`。更新发布脚本允许清单，13 个网页文件均需校验；5 项发布回退测试、Ruff、mypy、JavaScript 语法与差异空白检查通过。
+- 桌面、手机均查看实际呈现，手机确认加载 960 像素版本；既有对比、下载、浮条、无脚本与动效检查仍通过。截图和核验结果保留在 `output/second-photo-review/`。
+- 发布标记 `1792040320`，本轮之前的产品备份 `/var/www/fangdian-products/remove-number-plate.before-1792040320`，清单 `/opt/sitewide-visual-backups/rnp-product-1792040320/release.json`。沿用现有产品路由，不更改 Nginx。
