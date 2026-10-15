@@ -23,6 +23,7 @@ ALLOWED = PAGES | {
     "assets/original.webp", "assets/legacy.webp", "assets/high.webp",
     "assets/high-full.webp",
     "assets/pfd32132-result-960.webp", "assets/pfd32132-result-1920.webp",
+    "assets/pfd32132-original-960.webp", "assets/pfd32132-original-1920.webp",
 }
 
 
