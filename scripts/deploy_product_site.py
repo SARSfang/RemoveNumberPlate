@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 TARGET = Path("/var/www/fangdian-products/remove-number-plate")
 STAGE_ROOT = Path("/tmp")
 RECORD_ROOT = Path("/opt/sitewide-visual-backups")
-PAGES = {"index.html", "404.html", "styles.css", "site.js"}
+PAGES = {"index.html", "404.html", "license.html", "styles.css", "site.js"}
 ALLOWED = PAGES | {
     "LICENSE.txt", "THIRD_PARTY_NOTICES.txt", "assets/logo.png",
     "assets/original.webp", "assets/legacy.webp", "assets/high.webp",

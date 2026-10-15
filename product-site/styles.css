@@ -150,6 +150,35 @@ html.js-reveal [data-reveal].is-visible{opacity:1;transform:none}
 .photo-case .comparison{height:auto;aspect-ratio:4993 / 2809}
 .photo-case .comparison-image{height:100%;object-fit:contain}
 .photo-case .comparison.is-zoomed .comparison-image{transform:scale(2);transform-origin:30% 59%}
+.site-links{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.site-link{display:flex;flex-direction:column;padding:32px;border:1px solid var(--line);border-radius:10px;background:var(--white);transition:border-color .2s ease,background .2s ease}
+.site-link:hover{border-color:#a1b2a1;background:#eef1e8}
+.site-link-label{font-size:14px;color:var(--muted)}
+.site-link h3{font-size:30px;line-height:1.4;margin:15px 0}
+.site-link>p{font-size:17px;line-height:1.9;color:var(--muted);max-width:460px;margin-bottom:30px}
+.site-link-action{display:flex;align-items:center;justify-content:space-between;font-size:16px;color:var(--blue);margin-top:auto}
+body.license-open{overflow:hidden}
+.license-dialog{width:min(860px,calc(100% - 40px));max-width:calc(100% - 40px);height:min(86vh,920px);height:min(86dvh,920px);max-height:calc(100% - 40px);margin:auto;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--white);color:var(--ink);box-shadow:0 24px 90px #0004}
+.license-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+.license-dialog::backdrop{background:rgba(16,24,20,.58);backdrop-filter:blur(4px)}
+.license-dialog-header{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:24px 30px;border-bottom:1px solid var(--line)}
+.license-dialog-header .eyebrow{font-family:var(--sans);font-size:13px;letter-spacing:.04em;color:var(--muted)}
+.license-dialog-header h2{font-size:26px;line-height:1.4;margin:6px 0 0}
+.license-close{flex-shrink:0;display:inline-flex;align-items:center;gap:10px;min-height:44px;background:transparent;border:1px solid var(--line);border-radius:6px;padding:8px 14px;color:var(--ink);font-size:14px}
+.license-close span{font-size:24px;line-height:1}
+.license-dialog-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:25px 30px;outline-offset:-5px}
+.license-intro{font-size:15px;line-height:1.9;color:var(--muted);margin:0 0 26px}
+.license-document{overflow-wrap:anywhere}
+.license-document h3{font-size:20px;line-height:1.5;font-weight:600;margin:30px 0 14px}
+.license-document h3:first-child{margin-top:0;font-size:23px}
+.license-document p,.license-document ol{font-size:16px;line-height:1.95;margin:0 0 18px;color:var(--ink)}
+.license-document ol{padding-left:1.7em}
+.license-document li+li{margin-top:12px}
+.license-dialog-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 20px;border-top:1px solid var(--line);padding:10px 30px;background:var(--paper);font-size:14px}
+.license-dialog-footer a{display:inline-flex;align-items:center;gap:12px;min-height:44px}
+.license-page{max-width:860px;padding-block:54px 80px}
+.license-page h1{font-size:clamp(29px,4vw,42px);line-height:1.4;letter-spacing:-.03em;margin:16px 0 22px}
+.license-page-actions{display:flex;flex-wrap:wrap;gap:24px;align-items:center;padding-top:22px;border-top:1px solid var(--line);margin-top:30px}
 @media(max-width:1120px){
   .hero-layout{gap:35px;grid-template-columns:1.3fr 1fr}
   .hero-description{font-size:17px}
@@ -199,4 +228,16 @@ html.js-reveal [data-reveal].is-visible{opacity:1;transform:none}
   .photo-case-heading>p{font-size:15px}
   .photo-case-heading>p br{display:none}
   .photo-case figure>a{border-radius:8px}
+  .site-links{grid-template-columns:1fr;gap:20px}
+  .site-link{padding:25px}
+  .site-link h3{font-size:27px}
+  .site-link>p{font-size:16px}
+  .license-dialog{width:calc(100% - 24px);max-width:calc(100% - 24px);height:90vh;height:90dvh;max-height:calc(100% - 24px);border-radius:10px}
+  .license-dialog-header{padding:18px;gap:12px}
+  .license-dialog-header h2{font-size:21px}
+  .license-dialog-body{padding:22px 18px}
+  .license-dialog-footer{padding:8px 18px;font-size:13px}
+  .license-close{gap:6px;padding-inline:10px}
+  .license-document h3:first-child{font-size:21px}
+  .license-page{padding-block:35px 55px}
 }

@@ -2,6 +2,50 @@
   'use strict';
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------- 完整许可：原生模态框，链接保留 HTML 阅读后备 ---------- */
+  const licenseDialog = document.getElementById('license-dialog');
+  if (licenseDialog && typeof licenseDialog.showModal === 'function') {
+    let licenseTrigger = null;
+    document.querySelectorAll('[data-open-license]').forEach(link => {
+      link.addEventListener('click', event => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        licenseTrigger = link;
+        licenseDialog.showModal();
+        document.body.classList.add('license-open');
+        licenseDialog.querySelector('.license-dialog-body').scrollTop = 0;
+      });
+    });
+    licenseDialog.querySelector('[data-close-license]').addEventListener('click', () => licenseDialog.close());
+    licenseDialog.addEventListener('keydown', event => {
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(licenseDialog.querySelectorAll('a[href], button:not([disabled]), [tabindex="0"]'));
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+    let backdropPress = false;
+    const outsideDialog = event => {
+      const box = licenseDialog.getBoundingClientRect();
+      return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+    };
+    licenseDialog.addEventListener('pointerdown', event => { backdropPress = outsideDialog(event); });
+    licenseDialog.addEventListener('click', event => {
+      if (backdropPress && outsideDialog(event)) licenseDialog.close();
+      backdropPress = false;
+    });
+    licenseDialog.addEventListener('close', () => {
+      document.body.classList.remove('license-open');
+      if (licenseTrigger) licenseTrigger.focus({ preventScroll: true });
+    });
+  }
+
   /* ---------- 对比滑块：标签淡出 + 位置记忆 ---------- */
   document.querySelectorAll('[data-comparison]').forEach(group => {
     const comparison = group.querySelector('.comparison');

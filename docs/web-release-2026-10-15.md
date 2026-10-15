@@ -59,3 +59,14 @@
 - 缓存版本 `20261015p10`，发布资源增加到 15 个。桌面 1440×1000、手机 390×844 实际呈现与交互通过，320px 窄屏无横向溢出。验证路虎滑块不影响宝马、鼠标拖动、键盘、两边同步缩放与重置；普通动效、减少动效、无脚本和下载入口均复验。
 - Ruff、mypy、5 项发布回退测试、JavaScript 语法与差异检查通过。证据保留在 `output/type-comparison-review/`。
 - 发布标记 `1792040679`；上线前目录保留于 `/var/www/fangdian-products/remove-number-plate.before-1792040679`，发布记录为 `/opt/sitewide-visual-backups/rnp-product-1792040679/release.json`。
+
+## 关联站点模块与许可弹窗
+
+同日用户要求介绍并跳转拍摄站和个人站，同时将直接打开 TXT 的许可入口改为弹窗。
+
+- 项目介绍后增加“照片之外，还有这些创作”模块，分别介绍并链接 `https://fangdian.xyz/` 的 TJU 拍车计划和 `https://me.fangdian.xyz/` 的个人站。定位由当前站点源码核实，公网均返回 200；不修改两个目标站点内容。
+- 介绍页四个许可入口均默认打开原生 dialog。完整正文从未改动的 LICENSE.txt 排版生成，段落与编号规范呈现；比对时仅忽略换行空白和列表显示标记，核对所有正文一致。
+- 支持关闭按钮、Esc、遮罩关闭、Tab 焦点循环、关闭后回到原入口、背景滚动锁定、手机内部滚动。无 JavaScript 或缺少 dialog 支持时，链接进入新增 UTF-8 `license.html` 完整阅读页。404 中的许可入口也改为网页版。
+- TXT 只作为可下载原文保留；不修改授权范围或条款。原许可 SHA-256 仍为 `cef55abe470cadfa6265b858c6d074b58f6c737015feadf2c34e554ec5549929`。原 TXT 的公网响应为 `text/plain` 且没有声明字符编码，不能保证浏览器自动识别中文。
+- 缓存版本 `20261015p11`，共 16 个发布文件。桌面、手机、320px 窄屏及既有对比与下载回归检查通过；完整协议正文、四个入口、三种关闭方式、键盘焦点、手机滚动与无脚本阅读均验证。Ruff、mypy、5 项发布回退测试及 JavaScript 语法检查通过。证据在 `output/sites-license-review/`。
+- 发布标记 `1792041071`；上线前备份 `/var/www/fangdian-products/remove-number-plate.before-1792041071`，清单 `/opt/sitewide-visual-backups/rnp-product-1792041071/release.json`。无需调整服务器路由或安全头。

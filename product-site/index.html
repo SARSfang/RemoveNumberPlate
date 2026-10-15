@@ -13,8 +13,8 @@
   <meta property="og:image" content="https://fangdian.xyz/remove-number-plate/assets/high.webp">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="./assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="./styles.css?v=20261015p10">
-  <script src="./site.js?v=20261015p10" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=20261015p11">
+  <script src="./site.js?v=20261015p11" defer></script>
   <title>消除车牌 — AI 自动识别，高清消除车牌</title>
 </head>
 <body>
@@ -40,7 +40,7 @@
           <figcaption><span>实拍照片 · 高清修复后</span><a href="#compare">放大看消除效果 <span aria-hidden="true">↗</span></a></figcaption>
         </figure>
       </div>
-      <div class="hero-foot"><span>Windows 10 / 11 · 64 位</span><span>本地处理 · 结果另存</span><a href="./LICENSE.txt">个人及非商业使用</a></div>
+      <div class="hero-foot"><span>Windows 10 / 11 · 64 位</span><span>本地处理 · 结果另存</span><a href="./license.html" data-open-license aria-haspopup="dialog">个人及非商业使用</a></div>
     </section>
 
     <section class="section container" id="compare" aria-labelledby="compare-title">
@@ -113,12 +113,20 @@
       <div class="download-grid single-card">
         <article class="download-card" data-reveal><div class="download-top"><span class="badge">正式版</span><span class="version">v1.2.0</span></div><h3>自动消除与高清修复，一起装好。</h3><p>包含多车牌独立检测与修复、高清局部修复与纹理增强，高清运行组件已内置，无需另找测试版。适合日常批量处理与大图复核。</p><dl><div><dt>发布日期</dt><dd>2026.10.14</dd></div><div><dt>安装包</dt><dd>约 459 MiB</dd></div><div><dt>系统要求</dt><dd>Windows 10 / 11 · 64 位</dd></div><div><dt>完整性校验</dt><dd>SHA-256</dd></div></dl><a class="button primary" href="https://github.com/SARSfang/RemoveNumberPlate/releases/tag/v1.2.0" target="_blank" rel="noopener noreferrer">下载 v1.2.0（约 459 MiB） <span aria-hidden="true">↗</span></a><p class="download-note">按钮前往 GitHub Release 页面，由你确认后下载，网页不会自动下载软件。可在该页查看更新说明与历史版本。</p><details class="checksum"><summary>安装包校验与安装提示 <span aria-hidden="true">＋</span></summary><p class="checksum-label">安装包 SHA-256（RemoveNumberPlate-Setup-v1.2.0-win64.exe）</p><div class="hash-box"><code id="sha256-v120">2642d1554a167c5004ac1c1908784c896f1b2f97d27a4532f7613e3d4c6602d1</code><button type="button" class="copy-hash" data-copy-target="sha256-v120">复制哈希</button></div><p class="checksum-hint">以 GitHub Release 页面随附的 <code>SHA256SUMS.txt</code> 为准。校验方法与未签名安装提示见<a href="#faq">下方常见问题</a>。</p></details></article>
       </div>
-      <div class="license-note" data-reveal><span class="small-dot"></span><p>个人及非商业用途可使用。商业使用需另行授权，详见<a href="./LICENSE.txt">软件许可</a>。第三方组件遵循各自许可。</p></div>
+      <div class="license-note" data-reveal><span class="small-dot"></span><p>个人及非商业用途可使用。商业使用需另行授权，详见<a href="./license.html" data-open-license aria-haspopup="dialog">软件许可</a>。第三方组件遵循各自许可。</p></div>
     </section>
 
     <section class="project-section" id="project" aria-labelledby="project-title"><div class="container project-layout" data-reveal><div><p class="eyebrow">05 / 关于项目</p><h2 id="project-title">从汽车摄影，<br>长出来的小工具。</h2><div class="author"><img src="./assets/logo.png" width="44" height="44" alt=""><div><strong>Fang Dian / 方典</strong><span>产品需求 · 架构设计 · 验证与发布</span></div></div></div><div class="project-body"><p>从汽车摄影中反复遇到的修图需求出发，把车牌识别、局部修复和批量处理连在一起，让照片分享前的准备更省事。</p><p class="project-credit">代码采用 AI 辅助编程，作者负责需求、架构与发布代码审查。源码公开，采用非商用许可。</p><div class="project-links"><a class="text-link" href="https://github.com/SARSfang/RemoveNumberPlate" target="_blank" rel="noopener noreferrer">查看源码 <span aria-hidden="true">↗</span></a><a class="text-link" href="https://me.fangdian.xyz/development/remove-number-plate.html">项目档案 <span aria-hidden="true">↗</span></a></div><details><summary>了解它如何工作 <span aria-hidden="true">＋</span></summary><p>检测结果生成局部遮罩，修复模型填充区域，之后由编辑器复核。标准版使用 ONNX Runtime 与 LaMa；高清模式使用 Big-LaMa 组件，桌面界面使用 WebView2。</p><p>填充是根据周边内容生成的结果，不能恢复被车牌遮挡的真实表面。复杂反光、格栅和小车牌需要特别复核。</p></details></div></div></section>
 
-    <section class="section container faq-section" id="faq" aria-labelledby="faq-title"><div class="section-heading" data-reveal><p class="eyebrow">06 / 常见问题</p><div><h2 id="faq-title">使用前，你可能想知道。</h2></div></div><div class="faq-list" data-reveal>
+    <section class="section container related-sites" id="explore" aria-labelledby="explore-title">
+      <div class="section-heading" data-reveal><p class="eyebrow">06 / 继续看看</p><div><h2 id="explore-title">照片之外，<br>还有这些创作。</h2><p>这个小工具，来自同一位创作者的汽车摄影与产品实践。</p></div></div>
+      <div class="site-links" data-reveal>
+        <a class="site-link" href="https://fangdian.xyz/" target="_blank" rel="noopener noreferrer" aria-label="访问 TJU 拍车计划（在新标签页打开）"><span class="site-link-label">拍摄站</span><h3>TJU 拍车计划</h3><p>从一辆车，到一组照片。了解免费车辆拍摄、拍摄安排与参与方式。</p><span class="site-link-action">去拍摄站看看 <span aria-hidden="true">↗</span></span></a>
+        <a class="site-link" href="https://me.fangdian.xyz/" target="_blank" rel="noopener noreferrer" aria-label="访问方典个人站（在新标签页打开）"><span class="site-link-label">个人站</span><h3>方典 / Fang Dian</h3><p>研究、产品与摄影作品，记录从想法到实践的过程，也分享更多项目。</p><span class="site-link-action">了解更多创作 <span aria-hidden="true">↗</span></span></a>
+      </div>
+    </section>
+
+    <section class="section container faq-section" id="faq" aria-labelledby="faq-title"><div class="section-heading" data-reveal><p class="eyebrow">07 / 常见问题</p><div><h2 id="faq-title">使用前，你可能想知道。</h2></div></div><div class="faq-list" data-reveal>
       <details><summary>照片会上传吗？<span aria-hidden="true">＋</span></summary><p>软件的照片识别、修复与复核都在本机完成，无需上传照片。本网页仅展示预先准备的示例，没有上传照片或在线修复功能。</p></details>
       <details><summary>会覆盖我的原图吗？<span aria-hidden="true">＋</span></summary><p>处理结果另存，原图保留。输出照片保持输入尺寸；最终文件的压缩和元信息仍取决于导出设置。</p></details>
       <details><summary>所有车牌都能自动检测到吗？<span aria-hidden="true">＋</span></summary><p>不能保证。远处小车牌、倾斜、遮挡和反光可能造成漏检或误检。可以在复核编辑器调整区域，并选择保留或消除。</p></details>
@@ -126,14 +134,39 @@
       <details><summary>纹理增强会一直生效吗？<span aria-hidden="true">＋</span></summary><p>不会。开关默认开启，但仅在邻近细节适合时补充纹理；强结构边缘、颜色不匹配或来源不足会自动跳过。开关与强度均可调整。</p></details>
       <details><summary>下载后怎样确认安装包没有被篡改？<span aria-hidden="true">＋</span></summary><p>建议核对 SHA-256 哈希。在安装包所在文件夹打开 PowerShell，运行：</p><div class="faq-command"><code>Get-FileHash .\RemoveNumberPlate-Setup-v1.2.0-win64.exe -Algorithm SHA256</code></div><p>把输出的哈希与本页下载卡片中的哈希、或 GitHub Release 页随附的 <code>SHA256SUMS.txt</code> 逐位比对，一致再安装。若不一致，不要运行安装包。</p></details>
       <details><summary>安装时出现「Windows 已保护你的电脑」怎么办？<span aria-hidden="true">＋</span></summary><p>安装包目前未做代码签名，SmartScreen 可能提示未知发布者。哈希校验用于确认文件与官方发布一致，不是安全性保证。确认安装包来自<a href="https://github.com/SARSfang/RemoveNumberPlate/releases/tag/v1.2.0" target="_blank" rel="noopener noreferrer">官方 GitHub Release</a> 且哈希核对一致后，可在提示窗口选择「更多信息」→「仍要运行」。请不要从第三方镜像或网盘转载链接下载。</p></details>
-      <details><summary>商业照片处理可以直接使用吗？<span aria-hidden="true">＋</span></summary><p>当前许可仅授予个人及非商业用途。用于商业摄影或服务前，请联系作者确认授权。<a href="./LICENSE.txt">阅读完整许可</a>。</p></details>
+      <details><summary>商业照片处理可以直接使用吗？<span aria-hidden="true">＋</span></summary><p>当前许可仅授予个人及非商业用途。用于商业摄影或服务前，请联系作者确认授权。<a href="./license.html" data-open-license aria-haspopup="dialog">阅读完整许可</a>。</p></details>
       <details><summary>遇到问题，怎样反馈？<span aria-hidden="true">＋</span></summary><p>可以在 <a href="https://github.com/SARSfang/RemoveNumberPlate/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 描述版本、问题和复现步骤。分享照片前，请检查隐私并确认有权公开。</p></details>
     </div></section>
   </main>
-  <footer class="container footer"><div class="footer-main"><a class="brand" href="#main"><img src="./assets/logo.png" width="32" height="32" alt=""><span>消除车牌</span></a><p>为照片留出更多空间。</p><a class="text-link" href="https://me.fangdian.xyz/">返回 Fang Dian <span aria-hidden="true">↗</span></a></div><div class="footer-meta"><span>© 2026 Fang Dian</span><div><a href="./LICENSE.txt">非商用许可</a><a href="./THIRD_PARTY_NOTICES.txt">第三方许可说明</a><a href="https://github.com/SARSfang/RemoveNumberPlate/issues" target="_blank" rel="noopener noreferrer">反馈</a></div></div></footer>
+  <footer class="container footer"><div class="footer-main"><a class="brand" href="#main"><img src="./assets/logo.png" width="32" height="32" alt=""><span>消除车牌</span></a><p>为照片留出更多空间。</p><a class="text-link" href="https://me.fangdian.xyz/">返回 Fang Dian <span aria-hidden="true">↗</span></a></div><div class="footer-meta"><span>© 2026 Fang Dian</span><div><a href="./license.html" data-open-license aria-haspopup="dialog">非商用许可</a><a href="./THIRD_PARTY_NOTICES.txt">第三方许可说明</a><a href="https://github.com/SARSfang/RemoveNumberPlate/issues" target="_blank" rel="noopener noreferrer">反馈</a></div></div></footer>
   <div class="get-bar" data-get-bar role="region" aria-label="获取软件" hidden>
     <p class="get-bar-meta">AI 自动消除 · 高清修复<br>v1.2.0 / Windows 64 位</p>
     <a class="button primary" href="#download">获取软件 <span aria-hidden="true">↓</span></a>
   </div>
+  <dialog class="license-dialog" id="license-dialog" aria-labelledby="license-dialog-title">
+    <div class="license-dialog-header"><div><p class="eyebrow">使用许可</p><h2 id="license-dialog-title">个人及非商业使用</h2></div><button type="button" class="license-close" data-close-license aria-label="关闭许可协议" autofocus>关闭 <span aria-hidden="true">×</span></button></div>
+    <div class="license-dialog-body" tabindex="0" aria-label="完整许可协议"><p class="license-intro">请阅读完整协议，使用范围与限制以以下条款为准。</p>
+<div class="license-document" data-license-sha256="cef55abe470cadfa6265b858c6d074b58f6c737015feadf2c34e554ec5549929">
+<h3>Remove Number Plate 非商用许可协议</h3>
+<p>Copyright (c) 2026 Dian Fang（方典）（著作权人）</p>
+<p>本作品（以下简称&quot;软件&quot;，包含其全部源代码、界面资源、文档与相关材料）受著作权法保护。著作权人对软件及其全部组成部分保留完整、排他的著作权。</p>
+<p>本许可协议授予您使用软件的有限权利，但须遵守以下全部条款。</p>
+<h3>一、您的权利</h3>
+<ol><li>查看与学习：您可以自由查看、阅读、研究软件源代码。</li><li>个人与非商业使用：您可以出于个人学习、研究、非商业性目的运行、复制、修改并使用软件。</li><li>修改：您可以修改软件用于上述个人与非商业用途，但修改后的版本仍受本协议约束。</li></ol>
+<h3>二、禁止事项</h3>
+<p>未经著作权人事先书面许可，您不得：</p>
+<ol><li>将软件或其任何部分用于任何商业用途，包括但不限于：直接或间接销售、出租、许可、外包、打包进商业产品或商业服务中获利；</li><li>在未保留本版权声明与许可协议原文的前提下，向任何第三方再分发、转让或发布软件（无论是否修改）；</li><li>将软件或其衍生作品以闭源、专有或商业许可的形式重新发布；</li><li>移除、篡改或隐藏软件中的版权声明、署名信息或本许可协议。</li></ol>
+<h3>三、署名要求</h3>
+<p>任何被允许的复制、传播或修改，均须在显著位置保留以下信息：原始版权声明、作者署名（Dian Fang，方典）以及本许可协议全文。</p>
+<h3>四、免责声明</h3>
+<p>软件按&quot;现状&quot;提供，不作任何明示或默示的保证，包括但不限于适销性、特定用途适用性及不侵权的默示保证。因使用或无法使用软件所产生的任何直接、间接、偶然、特殊或后果性损害，著作权人概不负责。</p>
+<h3>五、许可终止</h3>
+<p>若您违反本协议任何条款，本许可协议将自动终止。终止后，您必须立即停止使用并销毁软件的全部副本。</p>
+<h3>六、其他</h3>
+<ol><li>本协议未尽事宜，均适用中华人民共和国著作权法及相关法律法规。</li><li>本协议授予的权利仅针对软件本身的著作权。软件中引用的第三方开源组件仍受其各自原始许可以及《THIRD_PARTY_NOTICES.md》的约束。</li><li>如需商业许可或有其他授权需求，请通过项目的 GitHub Issues 页面联系著作权人另行协商。</li></ol>
+</div>
+    </div>
+    <div class="license-dialog-footer"><a href="./LICENSE.txt" download="RemoveNumberPlate-LICENSE.txt">下载 TXT 原文 <span aria-hidden="true">↓</span></a><a href="https://github.com/SARSfang/RemoveNumberPlate/issues" target="_blank" rel="noopener noreferrer">咨询商业授权 <span aria-hidden="true">↗</span></a></div>
+  </dialog>
 </body>
 </html>
