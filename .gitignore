@@ -50,6 +50,7 @@ logs/
 # Build and packaging
 build/
 dist/
+portable/
 *.spec
 !packaging/*.spec
 
